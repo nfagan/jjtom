@@ -38,13 +38,17 @@ for i = 1:numel(edf_mats)
   
   if ( jjtom.check_overwrite(output_fname, params.overwrite) ), continue; end
   
-  rois = struct();
-  
   [app_dists, dists] = assign_dists( app_dists, dists, const_dists );
   
+  rois = struct();
+  
+  rois.apparatusl = jjtom.get_lapparatus_roi( dists, screen_consts, app_dists, app_consts, padding );
+  rois.apparatusr = jjtom.get_rapparatus_roi( dists, screen_consts, app_dists, app_consts, padding );
   rois.boxl = jjtom.get_lbox_roi( dists, screen_consts, app_dists, app_consts, padding );
   rois.boxr = jjtom.get_rbox_roi( dists, screen_consts, app_dists, app_consts, padding  );
-  rois.lemon = jjtom.get_lemon_roi( dists, screen_consts, app_dists, app_consts, padding );  
+  rois.lemon = jjtom.get_lemon_roi( dists, screen_consts, app_dists, app_consts, padding );
+  %   no restriction
+  rois.all = [ -Inf, -Inf, Inf, Inf ];
   
   roi_file = struct();
   roi_file.params = params;

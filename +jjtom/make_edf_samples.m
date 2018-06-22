@@ -6,8 +6,11 @@ params = jjtom.parsestruct( defaults, varargin );
 
 conf = params.config;
 
-edf_p = jjtom.get_datadir( 'edf/samples', conf );
-edfs = jjtom.get_datafiles( 'edf', conf, '.mat', params.files );
+isd = params.input_subdir;
+osd = params.output_subdir;
+
+edf_p = jjtom.get_datadir( fullfile('edf/samples', osd), conf );
+edfs = jjtom.get_datafiles( fullfile('edf', isd), conf, '.mat', params.files );
 
 for i = 1:numel(edfs)
   shared_utils.general.progress( i, numel(edfs), mfilename );

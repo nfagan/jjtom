@@ -3,75 +3,91 @@ tic;
 conf = jjtom.config.load();
 
 fix_p = jjtom.get_datadir( 'edf/events', conf );
+roi_p = jjtom.get_datadir( 'roi', conf );
 lab_p = jjtom.get_datadir( 'labels', conf );
 
 evt_mats = jjtom.get_datafiles( 'events', conf );
 
+min_dur = 25;
 look_back = -2e3;
-look_ahed = 5e3;
+look_ahead = 5e3;
 
 nfix = [];
-fixlabs = fcat();
+fixdur = [];
+nfixlabs = fcat();
+durlabs = fcat();
 
 for i = 1:numel(evt_mats)
   evt_file = jjtom.fload( evt_mats{i} );
   fname = jjtom.ext( evt_file.fileid, '.mat' );
   lab_file = jjtom.fload( fullfile(lab_p, fname) );
   fix_file = jjtom.fload( fullfile(fix_p, fname) );
+  roi_file = jjtom.fload( fullfile(roi_p, fname) );
+  
+  metalabs = fcat.from( lab_file.labels, lab_file.categories );
   
   evts = evt_file.events;
   
-  evtlabs = fcat.from( evt_file.key, {'event'} );
-  metalabs = fcat.from( lab_file.labels, lab_file.categories );
-  
-  append( fixlabs, join(evtlabs, metalabs) );
-  
-  fix_starts = fix_file.fixstart;
-  fix_stops = fix_file.fixstop;
+  fix_x = fix_file.fix_x;
+  fix_y = fix_file.fix_y;
+  fix_starts = fix_file.fix_start;
+  fix_stops = fix_file.fix_stop;
   fix_durs = fix_stops - fix_starts;
   
-  for j = 1:numel(evts)
-    evt = evts(j);
+  rois = struct2cell( roi_file.rois );
+  roi_names = fieldnames( roi_file.rois );
+  
+  inds = combvec( 1:numel(evts), 1:numel(roi_names) );
+  n_combs = size( inds, 2 );
+  
+  for j = 1:n_combs
+    evt_ind = inds(1, j);
+    roi_ind = inds(2, j);
+    
+    roi = rois{roi_ind};
+    roi_name = roi_names{roi_ind};
+    
+    evt = evts(evt_ind);
+    evt_name = evt_file.key(evt_ind);
+    
+    evtlabs = fcat.from( [evt_name, roi_name], {'event', 'roi'} );
+    jointlabs = join( evtlabs, metalabs );
     
     start = evt + look_back;
-    stop = evt + look_ahed;
+    stop = evt + look_ahead;
     
-    ib = fix_starts >= start & fix_starts <= stop;
-    ib = ib & fix_durs >= 25;
+    ib_t = fix_starts >= start & fix_starts <= stop & fix_durs >= min_dur;
+    ib_pos = jjtom.rectbounds( fix_x, fix_y, roi );
+    
+    ib = ib_t & ib_pos;
     
     nfix = [ nfix; sum(ib) ];
+    fixdur = [ fixdur; reshape(fix_durs(ib), [], 1) ];
     
-%     start_ind = find( t == start );
-%     stop_ind = find( t == stop );
-%     
-%     fixations = false( 1, numel(edf_file.Samples.posX) );
-%     starts = arrayfun( @(x) find(t == x), edf_file.Events.Efix.start );
-%     stops = arrayfun( @(x) find(t == x), edf_file.Events.Efix.end );
-% 
-%     for k = 1:numel(starts)
-%       fixations(starts(k):stops(k)) = true;
-%     end
-% 
-%     fixations = fixations(start_ind:stop_ind);
-% 
-%     % fix_starts = shared_utils.logical.find_starts( fixations(:)', 50 );
-%     [fix_starts, fix_durs] = shared_utils.logical.find_all_starts( fixations(:)' );
-%     ind = fix_durs >= 25;
-% 
-%     fix_starts = fix_starts(ind);
-%     fix_stops = fix_starts + fix_durs(ind) - 1;    
+    append( nfixlabs, jointlabs );
+    append( durlabs, repmat(jointlabs', sum(ib)) );   
   end  
 end
 
 toc;
-
-%%
+%%  nfix
 
 pl = plotlabeled();
 pl.summary_func = @plotlabeled.nanmean;
 pl.error_func = @plotlabeled.nansem;
 pl.one_legend = true;
 pl.x_tick_rotation = 0;
-pl.mask = find( fixlabs, {'test-reach'} );
+pl.mask = find( nfixlabs, {'test-reach', 'all'} );
 
-pl.bar( nfix, fixlabs, 'reach_direction', 'reach_type', {'monkey', 'event'} );
+pl.bar( nfix, nfixlabs, 'reach_direction', 'reach_type', {'monkey', 'event', 'roi'} );
+
+%%  fix dur
+
+pl = plotlabeled();
+pl.summary_func = @plotlabeled.nanmean;
+pl.error_func = @plotlabeled.nansem;
+pl.one_legend = true;
+pl.x_tick_rotation = 0;
+pl.mask = find( durlabs, {'test-reach'} );
+
+pl.bar( fixdur, durlabs, 'reach_direction', 'reach_type', {'monkey', 'event'} );

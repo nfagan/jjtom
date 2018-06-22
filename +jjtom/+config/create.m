@@ -25,7 +25,10 @@ PATHS.data_root = '';
 
 %   DEPENDENCIES
 DEPENDS = struct();
-DEPENDS.repositories = { 'shared_utils', 'eyelink' };
+DEPENDS.repositories = { ...
+    mkdepend('shared_utils', 'https://github.com/nfagan/shared_utils') ...
+  , mkdepend('categorical', 'https://github.com/nfagan/categorical', 'api/matlab') ...
+};
 
 %   EXPORT
 conf.PATHS = PATHS;
@@ -34,5 +37,15 @@ conf.DEPENDS = DEPENDS;
 if ( do_save )
   jjtom.config.save( conf );
 end
+
+end
+
+function s = mkdepend(name, src, subdir)
+
+s = struct();
+s.name = name;
+s.src = src;
+
+if ( nargin == 3 ), s.subdir = subdir; end
 
 end
