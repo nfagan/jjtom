@@ -9,13 +9,15 @@ lab_p = jjtom.get_datadir( 'labels', conf );
 evt_mats = jjtom.get_datafiles( 'events', conf );
 
 min_dur = 25;
-look_back = -2e3;
-look_ahead = 5e3;
+look_back = -3e3;
+look_ahead = 0e3;
 
 nfix = [];
 fixdur = [];
+
 nfixlabs = fcat();
 durlabs = fcat();
+firstlabs = fcat();
 
 for i = 1:numel(evt_mats)
   evt_file = jjtom.fload( evt_mats{i} );
@@ -50,7 +52,10 @@ for i = 1:numel(evt_mats)
     evt = evts(evt_ind);
     evt_name = evt_file.key(evt_ind);
     
-    evtlabs = fcat.from( [evt_name, roi_name], {'event', 'roi'} );
+    cats = { 'event', 'roi' };
+    labs = [ evt_name, roi_name ];
+    
+    evtlabs = setcat( addcat(fcat(), cats), cats, [evt_name, roi_name] );
     jointlabs = join( evtlabs, metalabs );
     
     start = evt + look_back;
@@ -67,9 +72,72 @@ for i = 1:numel(evt_mats)
     append( nfixlabs, jointlabs );
     append( durlabs, repmat(jointlabs', sum(ib)) );   
   end  
+  
+  %   
+  %   looks to which roi first
+  %   
+  roi1_name = 'boxl';
+  roi2_name = 'boxr';
+  neither_name = 'neither-first';
+  roi1 = rois{ strcmp(roi_names, roi1_name) };
+  roi2 = rois{ strcmp(roi_names, roi2_name) };
+  first_names = cell( size(evts) );
+  
+  for j = 1:numel(evts)
+    start = evts(j) + look_back;
+    stop = evts(j) + look_ahead;
+    
+    ib = fix_starts >= start & fix_starts <= stop & fix_durs >= min_dur;
+    ib1 = ib & jjtom.rectbounds( fix_x, fix_y, roi1 );
+    ib2 = ib & jjtom.rectbounds( fix_x, fix_y, roi2 );
+    
+    first1 = find( ib1, 1, 'first' );
+    first2 = find( ib2, 1, 'first' );
+    
+    emp1 = isempty( first1 );
+    emp2 = isempty( first2 );
+    
+    if ( emp1 && emp2 )
+      first_names{j} = neither_name;
+    elseif ( emp1 )
+      first_names{j} = roi2_name;
+    elseif ( emp2 )
+      first_names{j} = roi1_name;
+    else
+      if ( first1 < first2 )
+        first_names{j} = roi1_name;
+      elseif ( first2 < first1 )
+        first_names{j} = roi2_name;
+      else
+        first_names{j} = neither_name;
+      end
+    end    
+  end
+  
+  evtlabs = fcat.with( {'event', 'roi'} );
+  setcat( evtlabs, {'event', 'roi'}, [ evt_file.key(:), first_names(:)] );  
+  append( firstlabs, join(evtlabs, metalabs) );
+  
 end
 
 toc;
+
+%%  first look
+
+pl = plotlabeled();
+pl.summary_func = @(x) sum(x, 1);
+pl.error_func = @plotlabeled.nansem;
+pl.one_legend = true;
+pl.x_tick_rotation = 0;
+pl.shape = [ 4, 2 ];
+pl.mask = find( firstlabs, {'test-reach'} );
+
+dummy_data = ones( length(firstlabs), 1 );
+
+axs = pl.bar( dummy_data, firstlabs, 'roi', 'reach_direction', {'monkey', 'event'} );
+ylabel( axs(1), 'First look' );
+
+
 %%  nfix
 
 pl = plotlabeled();
@@ -77,9 +145,15 @@ pl.summary_func = @plotlabeled.nanmean;
 pl.error_func = @plotlabeled.nansem;
 pl.one_legend = true;
 pl.x_tick_rotation = 0;
-pl.mask = find( nfixlabs, {'test-reach', 'all'} );
+pl.shape = [4, 2];
+pl.fig = figure(1);
+pl.mask = find( nfixlabs, {'test-reach', 'boxl', 'boxr'} );
 
-pl.bar( nfix, nfixlabs, 'reach_direction', 'reach_type', {'monkey', 'event', 'roi'} );
+replace( nfixlabs, 'left', 'reach-type-left' );
+replace( nfixlabs, 'right', 'reach-type-right' );
+
+axs = pl.bar( nfix, nfixlabs, 'reach_direction', 'roi', {'monkey', 'event', 'reach_type'} );
+ylabel( axs(1), 'N Fixations' );
 
 %%  fix dur
 
@@ -88,6 +162,7 @@ pl.summary_func = @plotlabeled.nanmean;
 pl.error_func = @plotlabeled.nansem;
 pl.one_legend = true;
 pl.x_tick_rotation = 0;
-pl.mask = find( durlabs, {'test-reach'} );
+pl.mask = find( durlabs, {'test-reach', 'od-3', 'apparatus'} );
 
-pl.bar( fixdur, durlabs, 'reach_direction', 'reach_type', {'monkey', 'event'} );
+axs = pl.bar( fixdur, durlabs, 'reach_direction', 'reach_type', {'event', 'roi'} );
+ylabel( axs(1), 'Fix duration' );

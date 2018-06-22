@@ -42,13 +42,16 @@ for i = 1:numel(edf_mats)
   
   rois = struct();
   
-  rois.apparatusl = jjtom.get_lapparatus_roi( dists, screen_consts, app_dists, app_consts, padding );
-  rois.apparatusr = jjtom.get_rapparatus_roi( dists, screen_consts, app_dists, app_consts, padding );
-  rois.boxl = jjtom.get_lbox_roi( dists, screen_consts, app_dists, app_consts, padding );
-  rois.boxr = jjtom.get_rbox_roi( dists, screen_consts, app_dists, app_consts, padding  );
-  rois.lemon = jjtom.get_lemon_roi( dists, screen_consts, app_dists, app_consts, padding );
+  roi_info = { dists, screen_consts, app_dists, app_consts, padding };
+  
+  rois.apparatus =  jjtom.get_apparatus_roi( roi_info{:} );
+  rois.apparatusl = jjtom.get_lapparatus_roi( roi_info{:} );
+  rois.apparatusr = jjtom.get_rapparatus_roi( roi_info{:} );
+  rois.boxl =       jjtom.get_lbox_roi( roi_info{:} );
+  rois.boxr =       jjtom.get_rbox_roi( roi_info{:}  );
+  rois.lemon =      jjtom.get_lemon_roi( roi_info{:} );
   %   no restriction
-  rois.all = [ -Inf, -Inf, Inf, Inf ];
+  rois.all =        [ -Inf, -Inf, Inf, Inf ];
   
   roi_file = struct();
   roi_file.params = params;

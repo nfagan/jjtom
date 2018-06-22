@@ -4,7 +4,7 @@ edf_files = jjtom.get_datafiles( 'edf', conf, '.mat' );
 roi_p = jjtom.get_datadir( 'roi' );
 plot_p = fullfile( conf.PATHS.data_root, 'plots', 'traces', datestr(now, 'mmddyy') );
 
-eph_edfs = shared_utils.cell.containing( edf_files, {'Ly'} );
+eph_edfs = shared_utils.cell.containing( edf_files, {'Ta'} );
 % t_edfs = shared_utils.cell.containing( edf_files, {'Ta'} );
 t_edfs = [];
 
@@ -16,7 +16,7 @@ look_ahead = 5e3;
 
 %%
 
-save_fig = true;
+save_fig = false;
 
 for j = 1:numel(edf_files)
   
@@ -106,8 +106,9 @@ for j = 1:numel(edf_files)
     boxl = roi_file.rois.boxl;
     boxr = roi_file.rois.boxr;
     lemon = roi_file.rois.lemon;
+    apparatus = roi_file.rois.apparatus;
     
-    cellfun( @(x) shared_utils.plot.rect(x, ax), {boxl, boxr, lemon} );
+    cellfun( @(x) shared_utils.plot.rect(x, ax), {boxl, boxr, lemon, apparatus} );
 
     title_str = sprintf( '%s | Event: %d', id, event_index );
 

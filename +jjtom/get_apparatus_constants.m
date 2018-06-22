@@ -2,7 +2,7 @@ function consts = get_apparatus_constants()
 
 consts = struct();
 
-consts.apparatus_width_cm = 74.5;
+consts.apparatus_width_cm = 70;
 consts.apparatus_height_cm = 50;
 consts.box_width_cm = 13;
 consts.box_height_cm = 13;
