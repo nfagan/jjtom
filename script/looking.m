@@ -1,18 +1,19 @@
 conf = jjtom.config.load();
 
 edf_p = jjtom.get_datadir( 'edf' );
-meas_p = jjtom.get_datadir( 'measurements' );
+monk_p = jjtom.get_datadir( 'measurements/monkey' );
+monitor_p = jjtom.get_datadir( 'measurements/monitor' );
 plot_p = fullfile( jjtom.get_datadir('plots'), 'traces', datestr(now, 'mmddyy') );
 
-edf_files = shared_utils.io.find( edf_p, 't3.mat' );
-% edf_files = shared_utils.io.find( edf_p, '.mat' );
-% edf_files = edf_files(1);
+edf_files = shared_utils.io.find( edf_p, '.mat' );
 
-save_fig = true;
+edf_files = shared_utils.cell.containing( edf_files, 'EpLC' );
+
+save_fig = false;
 
 fix_type = 'eyelink';
 
-evts = 1:4;
+evts = 1:6;
 
 look_back = 0e3;
 look_ahead = 5e3;
@@ -20,12 +21,18 @@ look_ahead = 5e3;
 app_consts = jjtom.get_apparatus_constants();
 app_dists = jjtom.get_apparatus_distances();
 screen_consts = jjtom.get_screen_constants();
-const_dists = jjtom.get_screen_distances();
+
+% const_dists = jjtom.get_screen_distances();
 
 % t3
-const_dists.monitor_top_to_ground_cm = 93.6;
-app_dists.monitor_origin_to_app_origin_front_cm = -3.1;
-app_dists.monitor_origin_to_app_origin_left_cm = -10;
+% const_dists.monitor_top_to_ground_cm = 93.6;
+% app_dists.monitor_origin_to_app_origin_front_cm = -3.1;
+% app_dists.monitor_origin_to_app_origin_left_cm = -10;
+
+% EpLC
+% const_dists.monitor_top_to_ground_cm = 42.1 + 45.1;
+% app_dists.monitor_origin_to_app_origin_front_cm = -16;
+% app_dists.monitor_origin_to_app_origin_left_cm = -9.5;
 
 % t2
 % const_dists.monitor_top_to_ground_cm = 90.2;
@@ -38,12 +45,20 @@ padding = struct();
 padding.x = 0;
 padding.y = 0;
 
+json_func = @(p, id) jsondecode(fileread(fullfile(p, [id, '.json'])));
+
 for j = 1:numel(edf_files)
   
-  edf = shared_utils.io.fload( edf_files{j} );
-  dists = jsondecode( fileread(fullfile(meas_p, [edf.fileid, '.json'])) );
-  
+  edf = shared_utils.io.fload( edf_files{j} );  
   id = edf.fileid;
+  
+  dists = json_func( monk_p, id );
+  const_dists = json_func( monitor_p, id );
+  
+  app_dists.monitor_origin_to_app_origin_front_cm = const_dists.monitor_origin_to_app_origin_front_cm;
+  app_dists.monitor_origin_to_app_origin_left_cm = const_dists.monitor_origin_to_app_origin_left_cm;
+  
+  dists.eye_to_monitor_top_cm = const_dists.monitor_origin_to_ground_cm - dists.eye_to_ground_cm;
   
   plot_fname = sprintf( '%s_pad_%d', edf.fileid, padding.x );
 
@@ -130,10 +145,6 @@ for j = 1:numel(edf_files)
       colormap( cmap );
       caxis( [1, N] );
     end
-
-    top_to_ground = const_dists.monitor_top_to_ground_cm;
-
-    dists.eye_to_monitor_top_cm = top_to_ground - dists.eye_to_ground_cm;
 
     boxl = jjtom.get_lbox_roi( dists, screen_consts, app_dists, app_consts, padding );
     boxr = jjtom.get_rbox_roi( dists, screen_consts, app_dists, app_consts, padding  );

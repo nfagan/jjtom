@@ -12,4 +12,12 @@ for i = 1:numel(repos)
   addpath( genpath(fullfile(repo_dir, repos{i})) );
 end
 
+if ( isfield(conf.DEPENDS, 'others') )
+  others = conf.DEPENDS.others;
+  
+  if ( ~iscell(others) ), others = { others }; end
+  
+  cellfun( @(x) addpath(genpath(x)), others );
+end
+
 end

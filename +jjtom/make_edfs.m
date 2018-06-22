@@ -1,29 +1,32 @@
-function make_edfs()
+function make_edfs(varargin)
 
-edf_p = jjtom.get_datadir( 'edf' );
-output_p = edf_p;
+defaults = jjtom.get_common_make_defaults();
 
-edfs = shared_utils.io.dirnames( edf_p, '.edf' );
+params = jjtom.parsestruct( defaults, varargin );
+
+conf = params.config;
+
+edf_p = jjtom.get_datadir( 'edf', conf );
+edfs = jjtom.get_datafiles( 'edf', conf, '.edf', params.files );
 
 for i = 1:numel(edfs)
   shared_utils.general.progress( i, numel(edfs), mfilename );
   
-  edf_id = edfs{i}(1:end-4);
+  [~, edf_id] = fileparts( edfs{i} );
   
-  output_fname = fullfile( output_p, [edf_id, '.mat'] );
+  output_fname = fullfile( edf_p, jjtom.ext(edf_id, '.mat') );
   
-  if ( shared_utils.io.fexists(output_fname) )
-    continue;
-  end
+  if ( jjtom.check_overwrite(output_fname, params.overwrite) ), continue; end
   
-  edf = Edf2Mat( fullfile(edf_p, edfs{i}) );
+  edf = Edf2Mat( edfs{i} );
   
-  edf_struct = struct();
-  edf_struct.Samples = edf.Samples;
-  edf_struct.Events = edf.Events;
-  edf_struct.fileid = edf_id;
+  edf_file = struct();
+  edf_file.fileid = edf_id;
+  edf_file.params = params;
+  edf_file.Samples = edf.Samples;
+  edf_file.Events = edf.Events;
   
-  save( output_fname, 'edf_struct' );
+  save( output_fname, 'edf_file' );
 end
 
 end
