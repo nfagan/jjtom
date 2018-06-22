@@ -20,6 +20,7 @@ for i = 1:numel(meta_mats)
   if ( jjtom.check_overwrite(output_fname, params.overwrite) ), continue; end
   
   meta = jjtom.fload( meta_mats{i} );
+  meta.id = fileid;
   
   meta_file = struct();
   meta_file.fileid = fileid;
