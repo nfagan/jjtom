@@ -1,7 +1,6 @@
 %%
 
 conf = jjtom.config.load();
-% conf.PATHS.data_root = '';
 
 shared = { 'config', conf, 'overwrite', false };
 
