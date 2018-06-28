@@ -24,7 +24,7 @@ app_consts = jjtom.get_apparatus_constants();
 app_dists = jjtom.get_apparatus_distances();
 screen_consts = jjtom.get_screen_constants();
 
-for i = 1:numel(edf_mats)
+parfor i = 1:numel(edf_mats)
   shared_utils.general.progress( i, numel(edf_mats), mfilename );
   
   edf_file = shared_utils.io.fload( edf_mats{i} );
@@ -38,11 +38,11 @@ for i = 1:numel(edf_mats)
   
   if ( jjtom.check_overwrite(output_fname, params.overwrite) ), continue; end
   
-  [app_dists, dists] = assign_dists( app_dists, dists, const_dists );
+  [adists, dists] = assign_dists( app_dists, dists, const_dists );
   
   rois = struct();
   
-  roi_info = { dists, screen_consts, app_dists, app_consts, padding };
+  roi_info = { dists, screen_consts, adists, app_consts, padding };
   
   rois.apparatus =  jjtom.get_apparatus_roi( roi_info{:} );
   rois.apparatusl = jjtom.get_lapparatus_roi( roi_info{:} );
@@ -59,7 +59,7 @@ for i = 1:numel(edf_mats)
   roi_file.rois = rois;
   
   shared_utils.io.require_dir( roi_p );
-  save( output_fname, 'roi_file' );
+  shared_utils.io.psave( output_fname, roi_file, 'roi_file' );
 end
 
 end

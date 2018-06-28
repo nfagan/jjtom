@@ -7,7 +7,8 @@ zd = 0;
 w = app_consts.apparatus_width_cm / 2;  % first half of apparatus
 h = app_consts.apparatus_height_cm;
 
-if ( nargin == 5)
+if ( false )
+%   if ( nargin == 5)
   [xd, w] = jjtom.pad( xd, w, padding.x );
   [yd, h] = jjtom.pad( yd, h, padding.y );
 end

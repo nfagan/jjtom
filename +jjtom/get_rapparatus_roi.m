@@ -7,7 +7,8 @@ xd = w;
 yd = 0;
 zd = 0;
 
-if ( nargin == 5)
+if ( false )
+%   if ( nargin == 5)
   [xd, w] = jjtom.pad( xd, w, padding.x );
   [yd, h] = jjtom.pad( yd, h, padding.y );
 end

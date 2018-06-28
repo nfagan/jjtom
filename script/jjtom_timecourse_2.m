@@ -92,9 +92,6 @@ all_hands = jjtom.get_hand_indices( pltlabs );
 
 addcat( pltlabs, 'target' );
 
-% setcat( addcat(pltlabs, 'target'), 'target', 'apple', all_apples );
-% setcat( addcat(pltlabs, 'target'), 'target', 'hand', all_hands );
-
 replace( pltlabs, 'left', 'reach-to-left' );
 replace( pltlabs, 'right', 'reach-to-right' );
 replace( pltlabs, 'apparatusl', 'apparatus-left' );
@@ -114,76 +111,6 @@ prune( replabs );
 alldat = [ rowrep(timecourse, 2); rowrep(dur_timecourse, 2) ];
 
 toc;
-
-%%
-
-pl = plotlabeled();
-pl.summary_func = @plotlabeled.nanmean;
-pl.error_func = @plotlabeled.nansem;
-pl.one_legend = true;
-pl.x_tick_rotation = 0;
-pl.shape = [4, 2];
-pl.fig = figure(1);
-pl.x = bin_ts(1:end-1);
-pl.add_errors = false;
-pl.mask = find( pltlabs, {'test-reach', 'box-left', 'box-right', 'hand'} );
-
-lines = { 'reach_type' };
-panels = { 'monkey', 'event', 'target' };
-
-axs = pl.lines( timecourse, pltlabs, lines, panels );
-ylabel( axs(1), 'N Fixations' );
-
-%%
-
-data_are = 'nfix';
-% data_are = 'fixdur';
-
-date_dir = jjtom.datedir();
-
-if ( strcmp(data_are, 'fixdur') )
-  pltdata = dur_timecourse;
-  ylab = 'Duration (ms)';
-  plot_p = fullfile( base_plotp, 'dur_timecourse', date_dir );
-else
-  assert( strcmp(data_are, 'nfix') );
-  pltdata = timecourse;
-  ylab = 'N Fixations';
-  plot_p = fullfile( base_plotp, 'fix_timecourse', date_dir );
-end
-
-selectors = {'test-reach', 'box-left', 'box-right', 'apple'};
-
-pl = plotlabeled();
-pl.summary_func = @plotlabeled.nanmean;
-pl.error_func = @plotlabeled.nansem;
-pl.one_legend = true;
-pl.x_tick_rotation = 0;
-pl.shape = [2, 2];
-pl.fig = figure(1);
-pl.x = bin_ts(1:end-1);
-pl.add_errors = false;
-pl.mask = find( pltlabs, selectors );
-
-lines = { 'reach_type' };
-panels = { 'monkey', 'event', 'target' };
-
-fnames_are = union( lines, panels );
-
-axs = pl.lines( pltdata, pltlabs, lines, panels );
-ylabel( axs(1), ylab );
-
-set( axs, 'nextplot', 'add' );
-shared_utils.plot.add_vertical_lines( axs, 0 );
-
-if ( do_save )
-  fname = fcat.trim( joincat(prune(pltlabs), fnames_are) );
-  fname = sprintf( '%s_%s_%s', data_are, strjoin(selectors, '_'), fname );
-  
-  shared_utils.io.require_dir( plot_p );
-  
-  shared_utils.plot.save_fig( gcf, fullfile(plot_p, fname), {'epsc', 'png', 'fig'}, true );
-end
 
 %%  updated time course
 

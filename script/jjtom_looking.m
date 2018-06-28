@@ -4,19 +4,23 @@ edf_files = jjtom.get_datafiles( 'edf', conf, '.mat' );
 roi_p = jjtom.get_datadir( 'roi' );
 plot_p = fullfile( conf.PATHS.data_root, 'plots', 'traces', datestr(now, 'mmddyy') );
 
-eph_edfs = shared_utils.cell.containing( edf_files, {'Ta'} );
+% eph_edfs = shared_utils.cell.containing( edf_files, {'LyLC'} );
 % t_edfs = shared_utils.cell.containing( edf_files, {'Ta'} );
-t_edfs = [];
 
-edf_files = [ eph_edfs, t_edfs ];
+% edf_files = [ eph_edfs, t_edfs ];
 
 evts = 5:6;
 look_back = -2e3;
-look_ahead = 5e3;
+look_ahead = 10e3;
+
+edf_files = edf_files( ~shared_utils.cell.contains(edf_files, {'t1', 't2', 't3'}) );
 
 %%
 
-save_fig = false;
+% edf_files = edf_files(1);
+
+save_fig = true;
+flip_y = true;
 
 for j = 1:numel(edf_files)
   
@@ -29,7 +33,10 @@ for j = 1:numel(edf_files)
   sync_pulses = strcmp( edf_file.Events.Messages.info, 'sync' );
   sync_times = edf_file.Events.Messages.time( sync_pulses );
   
-  plot_fname = id;
+  px = roi_file.params.pad_x;
+  py = roi_file.params.pad_y;
+  
+  plot_fname = sprintf( 'pad_%d_%d_%s', px, py, id );
 
   %  plot fixations as solid color
 
@@ -44,6 +51,15 @@ for j = 1:numel(edf_files)
   evts = evts(within_evt_bounds);
 
   shape = shared_utils.plot.get_subplot_shape( numel(evts) );
+  
+  total_x = edf_file.Samples.posX;
+  total_y = edf_file.Samples.posY;
+  
+  if ( flip_y )
+    min_y = min( total_y );
+    max_y = max( total_y );
+    total_y = 1 - ((total_y - min_y) / (max_y-min_y));
+  end
 
   for idx = 1:numel(evts)
 
@@ -58,8 +74,8 @@ for j = 1:numel(edf_files)
     start_ind = find( t == start_time + look_back );
     stop_ind = find( t == start_time + look_ahead );
 
-    x = edf_file.Samples.posX(start_ind:stop_ind);
-    y = edf_file.Samples.posY(start_ind:stop_ind);
+    x = total_x(start_ind:stop_ind);
+    y = total_y(start_ind:stop_ind);
 
     fixations = false( 1, numel(edf_file.Samples.posX) );
     starts = arrayfun( @(x) find(t == x), edf_file.Events.Efix.start );
@@ -81,7 +97,8 @@ for j = 1:numel(edf_files)
     N = numel( fix_starts );
     cmap = hot( N );
 
-    h = plot( ax, x, y, '*', 'markersize', 0.001 ); hold on;
+    h = plot( ax, x, y, '*', 'markersize', 0.001 ); 
+    hold on;
     set( h, 'color', [0.9, 0.9, 0.9] );
 
     for i = 1:N
@@ -108,19 +125,29 @@ for j = 1:numel(edf_files)
     lemon = roi_file.rois.lemon;
     apparatus = roi_file.rois.apparatus;
     
-    cellfun( @(x) shared_utils.plot.rect(x, ax), {boxl, boxr, lemon, apparatus} );
+    flip_func = @(r, mins, maxs) (r - mins) / (maxs-mins);
+    
+    rects = { boxl, boxr, lemon, apparatus };
+    
+    if ( flip_y )
+      for i = 1:numel(rects)
+        rects{i}([2, 4]) = 1 - flip_func( rects{i}([4, 2]), min_y, max_y );
+      end
+    end
+    
+    cellfun( @(x) shared_utils.plot.rect(x, ax), rects );
 
     title_str = sprintf( '%s | Event: %d', id, event_index );
 
     title( title_str );
     xlabel( 'X Position (px)' );
-    ylabel( 'Y Position (px)' );
+    ylabel( 'Y Position (AU)' );
 
     % xlim( [-1e3, 2e3] );
     % ylim( [-1e3, 2e3] );
 
     xlim( [-1e3, 3e3] );
-    ylim( [-1e3, 3e3] );
+    ylim( [-0.5, 1.5] );
 
   end
   
