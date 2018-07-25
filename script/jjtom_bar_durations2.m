@@ -1,6 +1,14 @@
-function jjtom_bar_durations()
+function jjtom_bar_durations2(varargin)
 
-conf = jjtom.config.load();
+defaults.do_normalize = true;
+defaults.per_monkey = true;
+defaults.do_save = false;
+defaults.target_roi = 'apparatus-lr';
+defaults.config = jjtom.config.load();
+
+params = jjtom.parsestruct( defaults, varargin );
+
+conf = params.config;
 
 base_plotp = fullfile( conf.PATHS.data_root, 'plots' );
 
@@ -10,8 +18,9 @@ lab_p = jjtom.get_datadir( 'labels', conf );
 
 evt_mats = jjtom.get_datafiles( 'events', conf );
 
-do_normalize = true;
-do_save = true;
+do_normalize = params.do_normalize;
+per_monk = params.per_monkey;
+do_save = params.do_save;
 
 min_dur = 25;
 look_back = -2e3;
@@ -121,7 +130,6 @@ if ( do_normalize )
 end
 
 %%
-tic;
 
 targcat = 'target';
 
@@ -151,130 +159,78 @@ alldata = [ repdur; repfix ];
 repset( addcat(replabs, 'measure'), 'measure', {'duration', 'nfix'} );
 prune( replabs );
 
-toc;
+%%  overall looking
 
-%%
+pltdat = alldata;
+pltlabs = replabs';
 
-meas_type = 'duration';
-prefix = 'bars';
+prefix = 'overall__duration';
 
-replace( replabs, {'box-left', 'box-right'}, 'box-lr' );
-replace( replabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
+normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
+prefix = sprintf( '%s_%s', normpref, prefix );
 
-roi_types = { 'apparatus-lr', 'box-lr' };
-looks_to_types = { 'hand', 'apple' };
-meas_types = { 'nfix', 'duration' };
+pl = plotlabeled.make_common();
 
 xs = { 'reach_type' };
 groups = { 'event' };
-panels = { 'target', 'measure', 'roi' };
+panels = { 'target', 'measure', 'roi', 'monkey' };
 
-inds = combvec( 1:numel(roi_types), 1:numel(looks_to_types), 1:numel(meas_types) );
+if ( ~per_monk )
+  collapsecat( pltlabs, 'monkey' );
+end
 
-for i = 1:size(inds, 2)
-  
-  roi_t = roi_types{ inds(1, i) };
-  look_t = looks_to_types{ inds(2, i) };
-  meas_t = meas_types{ inds(3, i) };
-  
-  selectors = { 'test-reach', roi_t, meas_type, look_t };
-  
-  mask = find( replabs, selectors );
+mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', 'apparatus'} );
 
-  pl = plotlabeled();
-  pl.summary_func = @plotlabeled.nanmean;
-  pl.error_func = @plotlabeled.nansem;
-  pl.one_legend = true;
-  pl.x_tick_rotation = 0;
-%   pl.shape = [2, 2];
-  pl.fig = figure(1);
-  pl.match_y_lims = true;
-  pl.mask = mask;
+pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
-  fnames = unique( [xs, groups, panels] );
+plot_p = fullfile( jjtom.fname(pltlabs(mask), 'measure'), jjtom.datedir );
+plot_p = fullfile( base_plotp, plot_p );
 
-  axs = pl.bar( alldata, replabs, xs, groups, panels );
-
-  if ( strcmp(meas_t, 'duration') )
-    ylabel( axs(1), 'Duration (ms)' );
-  else
-    assert( strcmp(meas_t, 'nfix') );
-    ylabel( axs(1), 'N fixations' );
-  end
-  
-  plot_p = fullfile( base_plotp, meas_t, jjtom.datedir );
-  
-  if ( do_save )
-    shared_utils.io.require_dir( plot_p );
-    
-    fname = fcat.trim( joincat(prune(replabs(mask)), fnames) );
-    fname = sprintf( '%s_%s', prefix, fname );    
-    
-    jjtom.savefig( gcf, fullfile(plot_p, fname) );
-  end
+if ( do_save )  
+  cats = dsp3.nonun_or_all( pltlabs, unique(cshorzcat(xs, groups, panels)) );
+  dsp3.req_savefig( gcf, plot_p, pltlabs(mask), cats, prefix );
   
 end
 
-%%
+%%  overall looking
 
-prefix = 'combined_bars';
+pltdat = alldata;
+pltlabs = replabs';
 
-replace( replabs, {'box-left', 'box-right'}, 'box-lr' );
-replace( replabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
+target_roi = params.target_roi;
 
-meas_types = { 'nfix', 'duration' };
+replace( pltlabs, {'box-left', 'box-right'}, 'box-lr' );
+replace( pltlabs, {'apparatus-left', 'apparatus-right'}, target_roi );
+
+prefix = 'overall__duration';
+
+normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
+prefix = sprintf( '%s_%s', normpref, prefix );
+
+pl = plotlabeled.make_common();
 
 xs = { 'reach_type' };
 groups = { 'event' };
-panels = { 'target', 'measure', 'roi' };
+panels = { 'target', 'measure', 'roi', 'monkey' };
 
-inds = combvec( 1:numel(meas_types) );
+if ( ~per_monk )
+  collapsecat( pltlabs, 'monkey' );
+end
 
-[to_pltlabs, I] = only( replabs', {'apparatus-lr', 'box-lr', 'hand', 'apple'} );
-to_pltdata = alldata(I);
+mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', 'apple', target_roi} );
 
-for i = 1:size(inds, 2)
-  
-  meas_t = meas_types{ inds(1, i) };
-  
-  selectors = { 'test-reach', meas_t };
-  
-  mask = find( to_pltlabs, selectors );
+pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
-  pl = plotlabeled();
-  pl.summary_func = @plotlabeled.nanmean;
-  pl.error_func = @plotlabeled.nansem;
-  pl.one_legend = true;
-  pl.x_tick_rotation = 0;
-  pl.shape = [2, 2];
-  pl.fig = figure(1);
-  pl.match_y_lims = true;
-  pl.mask = mask;
+plot_p = fullfile( jjtom.fname(pltlabs(mask), 'measure'), jjtom.datedir );
+plot_p = fullfile( base_plotp, plot_p );
 
-  fnames = unique( [xs, groups, panels] );
-
-  axs = pl.bar( to_pltdata, to_pltlabs, xs, groups, panels );
-
-  if ( strcmp(meas_t, 'duration') )
-    ylabel( axs(1), 'Duration (ms)' );
-  else
-    assert( strcmp(meas_t, 'nfix') );
-    ylabel( axs(1), 'N fixations' );
-  end
-  
-  plot_p = fullfile( base_plotp, meas_t, jjtom.datedir );
-  
-  if ( do_save )
-    shared_utils.io.require_dir( plot_p );
-    
-    fname = fcat.trim( joincat(prune(replabs(mask)), fnames) );
-    fname = sprintf( '%s_%s', prefix, fname );    
-    
-    jjtom.savefig( gcf, fullfile(plot_p, fname) );
-  end
-  
+if ( do_save )  
+  cats = dsp3.nonun_or_all( pltlabs, unique(cshorzcat(xs, groups, panels)) );
+  dsp3.req_savefig( gcf, plot_p, pltlabs(mask), cats, prefix );
 end
 
 
+
+end
 
 

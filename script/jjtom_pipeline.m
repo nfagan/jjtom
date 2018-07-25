@@ -2,7 +2,7 @@
 
 conf = jjtom.config.load();
 
-shared = { 'config', conf, 'overwrite', false };
+shared = { 'config', conf, 'overwrite', true };
 
 %%  unified
 
@@ -25,6 +25,6 @@ jjtom.make_events( shared{:} );
 %%  rois
 
 jjtom.make_rois( shared{:} ...
-  , 'pad_x', 10 ...
-  , 'pad_y', 10 ...
+  , 'pad_x', 15 ...
+  , 'pad_y', 5 ...
 );

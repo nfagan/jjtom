@@ -1,4 +1,13 @@
-conf = jjtom.config.load();
+function jjtom_timecourse_2(varargin)
+
+defaults.target_roi = 'apparatus-lr';
+defaults.do_save = false;
+defaults.do_normalize = true;
+detaults.config = jjtom.config.load();
+
+params = dsp3.parsestruct( defaults, varargin );
+
+conf = params.config;
 
 base_plotp = fullfile( conf.PATHS.data_root, 'plots' );
 
@@ -18,6 +27,10 @@ bin_ts = look_back:bin_width:look_ahead;
 timecourse = [];
 dur_timecourse = [];
 timelabs = fcat();
+
+do_normalize = params.do_normalize;
+normlabs = fcat();
+normdat = [];
 
 for i = 1:numel(evt_mats)
   evt_file = jjtom.fload( evt_mats{i} );
@@ -55,7 +68,7 @@ for i = 1:numel(evt_mats)
     cats = { 'event', 'roi' };
     labs = [ evt_name, roi_name ];
     
-    evtlabs = setcat( addcat(fcat(), cats), cats, [evt_name, roi_name] );
+    evtlabs = setcat( addcat(fcat(), cats), cats, labs );
     jointlabs = join( evtlabs, metalabs );
     
     start = evt + look_back;
@@ -80,6 +93,47 @@ for i = 1:numel(evt_mats)
     
     append( timelabs, jointlabs );
   end    
+  
+  %
+  % norm
+  %
+  
+  evt1 = strcmp( evt_file.key, 'od-3' );
+  evt2 = strcmp( evt_file.key, 'test-reach' );
+  assert( sum(evt1 | evt2) == 2, 'Missing events' );
+  
+  evt1 = evt_file.events(evt1);
+  evt2 = evt_file.events(evt2);
+  
+  ib_t = fix_starts >= evt1 & fix_starts <= evt2;
+  
+  for j = 1:numel(rois)
+    roi = rois{j};
+    
+    ib_pos = jjtom.rectbounds( fix_x, fix_y, roi );
+    
+    ib_evts = ib_t & ib_pos;
+    
+    evtlabs = setcat( addcat(fcat(), 'roi'), 'roi', roi_names{j} );
+    jointlabs = join( evtlabs, metalabs );
+    
+    append( normlabs, jointlabs );
+    normdat = [ normdat; sum(fix_durs(ib_evts)) ];
+  end
+end
+
+%%  norm
+
+if ( do_normalize )
+  [I_time, C] = findall( timelabs, getcats(normlabs) );
+  
+  for i = 1:numel(I_time)
+    matching = find( normlabs, C(:, i) );
+    
+    assert( numel(matching) == 1 );
+    
+    dur_timecourse(I_time{i}, :) = dur_timecourse(I_time{i}, :) ./ normdat(matching);
+  end
 end
 
 %%
@@ -114,8 +168,12 @@ toc;
 
 %%  updated time course
 
-do_save = false;
+do_save = params.do_save;
 prefix = 'timecourse';
+target_roi = params.target_roi;
+
+normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
+prefix = sprintf( '%s_%s', normpref, prefix );
 
 to_pltlabs = replabs';
 to_pltdata = alldat;
@@ -127,7 +185,7 @@ subsets = { 'apple', 'hand' };
 
 [I, C] = findall( to_pltlabs, {'target', 'measure'}, find(to_pltlabs, subsets) );
 
-selectors = { 'test-reach', 'apparatus-lr' };
+selectors = { 'test-reach', target_roi };
 
 for i = 1:numel(I)
   
@@ -150,10 +208,16 @@ for i = 1:numel(I)
     ylab = 'N fixations';
   else
     assert( strcmp(meas_t, 'duration') );
-    ylab = 'Duration ms';
+    
+    if ( do_normalize )
+      ylab = 'Normalized duration';
+    else
+      ylab = 'Duration ms';
+    end
   end
   
-  plot_p = fullfile( base_plotp, meas_t, jjtom.datedir() );
+  plot_subdir = sprintf( '%s_timecourse', meas_t );
+  plot_p = fullfile( base_plotp, plot_subdir, jjtom.datedir() );
 
   lines = { 'reach_type' };
   panels = { 'monkey', 'event', 'target', 'roi' };
@@ -171,5 +235,7 @@ for i = 1:numel(I)
     shared_utils.io.require_dir( plot_p );
     jjtom.savefig( gcf, fullfile(plot_p, fname) );
   end
+
+end
 
 end
