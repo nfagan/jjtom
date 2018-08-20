@@ -23,4 +23,14 @@ if ( ~isempty(containing) )
   files = shared_utils.cell.containing( files, containing );
 end
 
+files = files( ~cellfun(@remove_if_leading_dot, files) );
+
+end
+
+function x = remove_if_leading_dot(file)
+
+[~, name] = fileparts( file );
+
+x = isempty(name) || strcmp( name(1), '.' );
+
 end

@@ -2,7 +2,7 @@ conf = jjtom.config.load();
 
 edf_files = jjtom.get_datafiles( 'edf', conf, '.mat' );
 roi_p = jjtom.get_datadir( 'roi' );
-plot_p = fullfile( conf.PATHS.data_root, 'plots', 'traces', datestr(now, 'mmddyy') );
+plot_p = fullfile( conf.PATHS.data_root, 'plots', 'traces_remeasure', datestr(now, 'mmddyy') );
 
 % eph_edfs = shared_utils.cell.containing( edf_files, {'LyLC'} );
 % t_edfs = shared_utils.cell.containing( edf_files, {'Ta'} );
@@ -16,8 +16,6 @@ look_ahead = 10e3;
 edf_files = edf_files( ~shared_utils.cell.contains(edf_files, {'t1', 't2', 't3'}) );
 
 %%
-
-% edf_files = edf_files(1);
 
 save_fig = true;
 flip_y = true;
@@ -124,10 +122,11 @@ for j = 1:numel(edf_files)
     boxr = roi_file.rois.boxr;
     lemon = roi_file.rois.lemon;
     apparatus = roi_file.rois.apparatus;
+    face = roi_file.rois.face;
     
     flip_func = @(r, mins, maxs) (r - mins) / (maxs-mins);
     
-    rects = { boxl, boxr, lemon, apparatus };
+    rects = { boxl, boxr, lemon, apparatus, face };
     
     if ( flip_y )
       for i = 1:numel(rects)
@@ -135,7 +134,7 @@ for j = 1:numel(edf_files)
       end
     end
     
-    cellfun( @(x) shared_utils.plot.rect(x, ax), rects );
+    cellfun( @(x) shared_utils.plot.rect(x, ax), rects, 'un', 0 );
 
     title_str = sprintf( '%s | Event: %d', id, event_index );
 

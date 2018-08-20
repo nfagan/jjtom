@@ -3,7 +3,7 @@ function jjtom_timecourse_2(varargin)
 defaults.target_roi = 'apparatus-lr';
 defaults.do_save = false;
 defaults.do_normalize = true;
-detaults.config = jjtom.config.load();
+defaults.config = jjtom.config.load();
 
 params = dsp3.parsestruct( defaults, varargin );
 
@@ -152,6 +152,8 @@ replace( pltlabs, 'apparatusl', 'apparatus-left' );
 replace( pltlabs, 'apparatusr', 'apparatus-right' );
 replace( pltlabs, 'boxl', 'box-left' );
 replace( pltlabs, 'boxr', 'box-right' );
+replace( pltlabs, 'facel', 'face-left' );
+replace( pltlabs, 'facer', 'face-right' );
 
 handlabs = setcat( pltlabs', 'target', 'apple', all_apples );
 applelabs = setcat( pltlabs', 'target', 'hand', all_hands );
@@ -180,6 +182,7 @@ to_pltdata = alldat;
 
 replace( to_pltlabs, {'box-left', 'box-right'}, 'box-lr' );
 replace( to_pltlabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
+replace( to_pltlabs, {'face-left', 'face-right'}, 'face-lr' );
 
 subsets = { 'apple', 'hand' };
 

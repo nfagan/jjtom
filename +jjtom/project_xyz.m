@@ -2,7 +2,6 @@ function [x_px, y_px] = project_xyz( x_far2eye, y_far2eye, z_far2eye, screen_con
 
 monitor_width_cm = screen_consts.MONITOR_WIDTH_CM;
 monitor_height_cm = screen_consts.MONITOR_HEIGHT_CM;
-monitor_bezel_cm = screen_consts.MONITOR_BEZEL_CM;
 monitor_width_px = screen_consts.MONITOR_WIDTH_PX;
 monitor_height_px = screen_consts.MONITOR_HEIGHT_PX;
 

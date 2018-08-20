@@ -3,10 +3,10 @@ function I = get_hand_indices(labs)
 I = [];
 
 selectors = {
-  {'boxl', 'apparatusl', 'left', 'consistent'},
-  {'boxr', 'apparatusr', 'right', 'consistent'},
-  {'boxl', 'apparatusl', 'left', 'inconsistent'},
-  {'boxr', 'apparatusr', 'right', 'inconsistent'}
+  {'facel', 'boxl', 'apparatusl', 'left', 'consistent'},
+  {'facer', 'boxr', 'apparatusr', 'right', 'consistent'},
+  {'facel', 'boxl', 'apparatusl', 'left', 'inconsistent'},
+  {'facer', 'boxr', 'apparatusr', 'right', 'inconsistent'}
 };
 
 for j = 1:numel(selectors)

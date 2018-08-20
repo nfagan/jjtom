@@ -3,10 +3,10 @@ function I = get_apple_indices(labs)
 I = [];
 
 selectors = {
-  {'boxl', 'apparatusl', 'left', 'consistent'},
-  {'boxl', 'apparatusl', 'right', 'inconsistent'},
-  {'boxr', 'apparatusr', 'right', 'consistent'},
-  {'boxr', 'apparatusr', 'left', 'inconsistent'}
+  {'facel', 'boxl', 'apparatusl', 'left', 'consistent'},
+  {'facel', 'boxl', 'apparatusl', 'right', 'inconsistent'},
+  {'facer', 'boxr', 'apparatusr', 'right', 'consistent'},
+  {'facer', 'boxr', 'apparatusr', 'left', 'inconsistent'}
 };
 
 for j = 1:numel(selectors)

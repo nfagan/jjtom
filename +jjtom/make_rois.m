@@ -50,6 +50,9 @@ parfor i = 1:numel(edf_mats)
   rois.boxl =       jjtom.get_lbox_roi( roi_info{:} );
   rois.boxr =       jjtom.get_rbox_roi( roi_info{:}  );
   rois.lemon =      jjtom.get_lemon_roi( roi_info{:} );
+  rois.face =       jjtom.get_face_roi( roi_info{:} );
+  rois.facel =      jjtom.get_lface_roi( roi_info{:} );
+  rois.facer =      jjtom.get_rface_roi( roi_info{:} );
   %   no restriction
   rois.all =        [ -Inf, -Inf, Inf, Inf ];
   

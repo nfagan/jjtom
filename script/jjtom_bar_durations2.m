@@ -129,6 +129,8 @@ if ( do_normalize )
   end
 end
 
+durs( isinf(durs) ) = NaN;
+
 %%
 
 targcat = 'target';
@@ -144,6 +146,8 @@ replace( pltlabs, 'apparatusl', 'apparatus-left' );
 replace( pltlabs, 'apparatusr', 'apparatus-right' );
 replace( pltlabs, 'boxl', 'box-left' );
 replace( pltlabs, 'boxr', 'box-right' );
+replace( pltlabs, 'facel', 'face-left' );
+replace( pltlabs, 'facer', 'face-right' );
 
 replabs = addcat( pltlabs', targcat );
 
@@ -170,6 +174,7 @@ normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
 prefix = sprintf( '%s_%s', normpref, prefix );
 
 pl = plotlabeled.make_common();
+pl.x_tick_rotation = 0;
 
 xs = { 'reach_type' };
 groups = { 'event' };
@@ -200,7 +205,9 @@ pltlabs = replabs';
 target_roi = params.target_roi;
 
 replace( pltlabs, {'box-left', 'box-right'}, 'box-lr' );
-replace( pltlabs, {'apparatus-left', 'apparatus-right'}, target_roi );
+% replace( pltlabs, {'apparatus-left', 'apparatus-right'}, target_roi );
+replace( pltlabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
+replace( pltlabs, {'face-left', 'face-right'}, 'face-lr' );
 
 prefix = 'overall__duration';
 
@@ -208,6 +215,7 @@ normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
 prefix = sprintf( '%s_%s', normpref, prefix );
 
 pl = plotlabeled.make_common();
+pl.x_tick_rotation = 0;
 
 xs = { 'reach_type' };
 groups = { 'event' };
