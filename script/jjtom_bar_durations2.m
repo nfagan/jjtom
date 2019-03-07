@@ -4,7 +4,11 @@ defaults.do_normalize = true;
 defaults.per_monkey = true;
 defaults.do_save = false;
 defaults.target_roi = 'apparatus-lr';
+defaults.apple_or_hand = 'apple';
 defaults.config = jjtom.config.load();
+defaults.files = {};
+defaults.not_files = {};
+defaults.separate_apparatus_and_face = false;
 
 params = jjtom.parsestruct( defaults, varargin );
 
@@ -17,6 +21,7 @@ roi_p = jjtom.get_datadir( 'roi', conf );
 lab_p = jjtom.get_datadir( 'labels', conf );
 
 evt_mats = jjtom.get_datafiles( 'events', conf );
+evt_mats = shared_utils.io.filter_files( evt_mats, params.files, params.not_files );
 
 do_normalize = params.do_normalize;
 per_monk = params.per_monkey;
@@ -56,11 +61,20 @@ for i = 1:numel(evt_mats)
   inds = combvec( 1:numel(evts), 1:numel(roi_names) );
   n_combs = size( inds, 2 );
   
+  ib_fixs = cell( numel(rois), 1 );
+  for j = 1:numel(rois)
+    ib_fixs{j} = jjtom.rectbounds( fix_x, fix_y, rois{j} );
+  end
+  
+  if ( params.separate_apparatus_and_face )
+    ib_fixs = separate_apparatus_and_face( ib_fixs, roi_names );
+  end
+  
   for j = 1:n_combs
     evt_ind = inds(1, j);
     roi_ind = inds(2, j);
     
-    roi = rois{roi_ind};
+%     roi = rois{roi_ind};
     roi_name = roi_names{roi_ind};
     
     evt = evts(evt_ind);
@@ -76,7 +90,7 @@ for i = 1:numel(evt_mats)
     stop = evt + look_ahead;
     
     ib_t = fix_starts >= evt + look_back & fix_starts <= evt + look_ahead;
-    ib_pos = jjtom.rectbounds( fix_x, fix_y, roi );
+    ib_pos = ib_fixs{roi_ind};
     
     ib = ib_t & ib_pos;
     
@@ -102,7 +116,7 @@ for i = 1:numel(evt_mats)
   for j = 1:numel(rois)
     roi = rois{j};
     
-    ib_pos = jjtom.rectbounds( fix_x, fix_y, roi );
+    ib_pos = ib_fixs{j};
     
     ib_evts = ib_t & ib_pos;
     
@@ -225,7 +239,7 @@ if ( ~per_monk )
   collapsecat( pltlabs, 'monkey' );
 end
 
-mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', 'apple', target_roi} );
+mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', params.apple_or_hand, target_roi} );
 
 pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
@@ -238,6 +252,24 @@ if ( do_save )
 end
 
 
+
+end
+
+function ib_fixs = separate_apparatus_and_face(ib_fixs, roi_names)
+
+apparatus_l = strcmp( roi_names, 'apparatusl' );
+apparatus_r = strcmp( roi_names, 'apparatusr' );
+
+face_l = strcmp( roi_names, 'facel' );
+face_r = strcmp( roi_names, 'facer' );
+
+assert( nnz(apparatus_l | apparatus_r | face_l | face_r) == 4 );
+
+is_ib_face = ib_fixs{face_l} | ib_fixs{face_r};
+
+% Remove fixations that overlap between face and apparatus
+ib_fixs{apparatus_l}(is_ib_face) = false;
+ib_fixs{apparatus_r}(is_ib_face) = false;
 
 end
 

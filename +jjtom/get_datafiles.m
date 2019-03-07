@@ -1,7 +1,7 @@
 function files = get_datafiles(p, conf, ext, containing)
 
 if ( nargin < 4 ), containing = []; end
-if ( nargin < 3 ), ext = '.mat'; end
+if ( nargin < 3 || isempty(ext) ), ext = '.mat'; end
 
 if ( nargin < 2 || isempty(conf) )
   conf = jjtom.config.load();

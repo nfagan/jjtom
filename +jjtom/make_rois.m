@@ -45,8 +45,8 @@ parfor i = 1:numel(edf_mats)
   roi_info = { dists, screen_consts, adists, app_consts, padding };
   
   rois.apparatus =  jjtom.get_apparatus_roi( roi_info{:} );
-  rois.apparatusl = jjtom.get_lapparatus_roi( roi_info{:} );
-  rois.apparatusr = jjtom.get_rapparatus_roi( roi_info{:} );
+  rois.apparatusl = jjtom.get_lapparatus_roi( roi_info{:}, true );
+  rois.apparatusr = jjtom.get_rapparatus_roi( roi_info{:}, true );
   rois.boxl =       jjtom.get_lbox_roi( roi_info{:} );
   rois.boxr =       jjtom.get_rbox_roi( roi_info{:}  );
   rois.lemon =      jjtom.get_lemon_roi( roi_info{:} );

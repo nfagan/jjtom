@@ -1,4 +1,8 @@
-function roi = get_rapparatus_roi(screen_dists, screen_consts, app_dists, app_consts, padding)
+function roi = get_rapparatus_roi(screen_dists, screen_consts, app_dists, app_consts, padding, limit_y)
+
+if ( nargin < 6 )
+  limit_y = false;
+end
 
 w = app_consts.apparatus_width_cm / 2;  % 2nd half of apparatus
 h = app_consts.apparatus_height_cm;
@@ -16,7 +20,9 @@ end
 roi = jjtom.get_roi( app_dists, screen_consts, screen_dists, xd, yd, zd, w, h );
 
 %   no limit on y
-roi(2) = -Inf;
-roi(4) = Inf;
+if ( ~limit_y )
+  roi(2) = -Inf;
+  roi(4) = Inf;
+end
 
 end

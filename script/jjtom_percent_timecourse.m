@@ -1,6 +1,6 @@
 tic;
 
-conf = jjtom.config.load();
+conf = jjtom.tmp_setdataroot( '/Volumes/My Passport/NICK/Chang Lab 2016/jess/tom' );
 
 plot_p = fullfile( conf.PATHS.data_root, 'plots', 'p_inbounds', datestr(now, 'mmddyy') );
 
@@ -8,7 +8,12 @@ samp_p = jjtom.get_datadir( 'edf/samples', conf );
 roi_p = jjtom.get_datadir( 'roi', conf );
 lab_p = jjtom.get_datadir( 'labels', conf );
 
+% files = { 'KrLu', 'KrRu', 'KrLe', 'KrRe' };
+files = {};
+not_files = {'Kr', 'Cn'};
+
 evt_mats = jjtom.get_datafiles( 'events', conf );
+evt_mats = shared_utils.io.filter_files( evt_mats, files, not_files );
 
 bin_width = 250;
 look_back = -3e3;
@@ -123,7 +128,7 @@ pltdata = [ timecourse(all_hands, :); timecourse(all_apples, :) ];
 toc;
 %%
 
-do_save = false;
+do_save = true;
 
 prefix = 'percent_inbounds_full';
 selectors = { 'test-reach', 'apparatus-left', 'apparatus-right', 'reach-to-right' };
@@ -165,14 +170,16 @@ end
 
 %%  plot per panel
 
-do_save = false;
+do_save = true;
 prefix = 'percent_inbounds';
 
 to_pltlabs = pltlabs';
 replace( to_pltlabs, {'box-left', 'box-right'}, 'box-lr' );
 replace( to_pltlabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
 
-selectors = { 'test-reach', 'box-lr', 'hand' };
+% selectors = { 'test-reach', 'box-lr', 'hand' };
+selectors = { 'test-reach', 'apparatus-lr', 'apple' };
+
 mask = find( to_pltlabs, selectors );
 
 pl = plotlabeled();

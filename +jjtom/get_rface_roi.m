@@ -11,7 +11,7 @@ yd = app_h;
 zd = app_consts.apparatus_depth_cm;
 
 if ( nargin == 5 )
-  [xd, w] = jjtom.pad( xd, w, padding.x );
+%   [xd, w] = jjtom.pad( xd, w, padding.x );
   [yd, h] = jjtom.pad( yd, h, padding.y );
 end
 

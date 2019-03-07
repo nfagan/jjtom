@@ -1,12 +1,14 @@
 tic;
 
 conf = jjtom.config.load();
+conf.PATHS.data_root = '/Volumes/My Passport/NICK/Chang Lab 2016/jess/tom';
 
 samp_p = jjtom.get_datadir( 'edf/samples', conf );
 roi_p = jjtom.get_datadir( 'roi', conf );
 lab_p = jjtom.get_datadir( 'labels', conf );
 
-evt_mats = jjtom.get_datafiles( 'events', conf );
+files = { 'KrLu', 'KrRu', 'KrLe', 'KrRe' };
+evt_mats = jjtom.get_datafiles( 'events', conf, '.mat', files );
 
 timecourse = {};
 eventinds = [];

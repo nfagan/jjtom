@@ -8,5 +8,7 @@ defaults.append = true;
 defaults.save = true;
 defaults.input_subdir = '';
 defaults.output_subdir = '';
+defaults.is_parallel = true;
+defaults.skip_existing = true;
 
 end

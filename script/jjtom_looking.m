@@ -1,16 +1,20 @@
-conf = jjtom.config.load();
+conf = jjtom.tmp_setdataroot( '/Volumes/My Passport/NICK/Chang Lab 2016/jess/tom' );
 
 edf_files = jjtom.get_datafiles( 'edf', conf, '.mat' );
-roi_p = jjtom.get_datadir( 'roi' );
+roi_p = jjtom.get_datadir( 'roi', conf );
 plot_p = fullfile( conf.PATHS.data_root, 'plots', 'traces_remeasure', datestr(now, 'mmddyy') );
+
+edf_files = shared_utils.cell.containing( edf_files, {'Kr'} );
+% edf_files = shared_utils.cell.containing( edf_files, {'Hi'} );
 
 % eph_edfs = shared_utils.cell.containing( edf_files, {'LyLC'} );
 % t_edfs = shared_utils.cell.containing( edf_files, {'Ta'} );
 
 % edf_files = [ eph_edfs, t_edfs ];
 
-evts = 5:6;
-look_back = -2e3;
+% evts = 5:6;
+evts = 6;
+look_back = 0e3;
 look_ahead = 10e3;
 
 edf_files = edf_files( ~shared_utils.cell.contains(edf_files, {'t1', 't2', 't3'}) );
@@ -19,6 +23,12 @@ edf_files = edf_files( ~shared_utils.cell.contains(edf_files, {'t1', 't2', 't3'}
 
 save_fig = true;
 flip_y = true;
+one_plot = true;
+ylims = [0, 1.2];
+
+if ( one_plot )
+  assert( numel(evts) == 1, 'Only use one event if using one_plot.' );
+end
 
 for j = 1:numel(edf_files)
   
@@ -38,17 +48,23 @@ for j = 1:numel(edf_files)
 
   %  plot fixations as solid color
 
-  f = figure(1); clf();
-  set( f, 'units', 'normalized' );
-  set( f, 'position', [0, 0, 1, 1] );
+  if ( ~one_plot || j == 1 )
+    f = figure(1); clf();
+    set( f, 'units', 'normalized' );
+    set( f, 'position', [0, 0, 1, 1] );
 
-  hold off;
+    hold off;
+  end
   
   within_evt_bounds = evts <= numel(sync_times);
   
   evts = evts(within_evt_bounds);
 
-  shape = shared_utils.plot.get_subplot_shape( numel(evts) );
+  if ( one_plot )
+    shape = shared_utils.plot.get_subplot_shape( numel(edf_files) );
+  else
+    shape = shared_utils.plot.get_subplot_shape( numel(evts) );
+  end
   
   total_x = edf_file.Samples.posX;
   total_y = edf_file.Samples.posY;
@@ -60,8 +76,11 @@ for j = 1:numel(edf_files)
   end
 
   for idx = 1:numel(evts)
-
-    ax = subplot( shape(1), shape(2), idx );
+    if ( one_plot )
+      ax = subplot( shape(1), shape(2), j );
+    else
+      ax = subplot( shape(1), shape(2), idx );
+    end
     set( ax, 'nextplot', 'replace' );
 
     event_index = evts(idx);
@@ -122,11 +141,17 @@ for j = 1:numel(edf_files)
     boxr = roi_file.rois.boxr;
     lemon = roi_file.rois.lemon;
     apparatus = roi_file.rois.apparatus;
-    face = roi_file.rois.face;
+%     face = roi_file.rois.face;
+    facel = roi_file.rois.facel;
+    facer = roi_file.rois.facer;
     
     flip_func = @(r, mins, maxs) (r - mins) / (maxs-mins);
     
-    rects = { boxl, boxr, lemon, apparatus, face };
+%     rects = { boxl, boxr, lemon, apparatus, face };
+    rects = { boxl, boxr, lemon, facel, facer };
+    
+    rects{end+1} = roi_file.rois.apparatusl;
+    rects{end+1} = roi_file.rois.apparatusr;
     
     if ( flip_y )
       for i = 1:numel(rects)
@@ -146,11 +171,11 @@ for j = 1:numel(edf_files)
     % ylim( [-1e3, 2e3] );
 
     xlim( [-1e3, 3e3] );
-    ylim( [-0.5, 1.5] );
+    ylim( ylims );
 
   end
   
-  if ( save_fig )
+  if ( save_fig && (~one_plot || j == numel(edf_files)) )
     shared_utils.io.require_dir( plot_p );
     shared_utils.plot.save_fig( gcf, fullfile(plot_p, plot_fname) ...
       , {'epsc', 'png', 'fig'}, true );

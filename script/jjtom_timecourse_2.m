@@ -4,6 +4,8 @@ defaults.target_roi = 'apparatus-lr';
 defaults.do_save = false;
 defaults.do_normalize = true;
 defaults.config = jjtom.config.load();
+defaults.files = {};
+defaults.not_files = {};
 
 params = dsp3.parsestruct( defaults, varargin );
 
@@ -16,6 +18,7 @@ roi_p = jjtom.get_datadir( 'roi', conf );
 lab_p = jjtom.get_datadir( 'labels', conf );
 
 evt_mats = jjtom.get_datafiles( 'events', conf );
+evt_mats = shared_utils.io.filter_files( evt_mats, params.files, params.not_files );
 
 min_dur = 25;
 look_back = -3e3;

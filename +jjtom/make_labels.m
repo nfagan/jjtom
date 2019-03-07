@@ -21,6 +21,10 @@ for i = 1:numel(un_mats)
   labs = struct2cell( un_file.meta );
   cats = fieldnames( un_file.meta );
   
+  if ( any(strcmp(cats, 'target_direction')) )
+    labs = relabel_directions( cats, labs );
+  end
+  
   label_file = struct();
   label_file.fileid = un_file.fileid;
   label_file.labels = labs(:)';
@@ -30,5 +34,17 @@ for i = 1:numel(un_mats)
   
   save( output_fname, 'label_file' );  
 end
+
+end
+
+function labs = relabel_directions(cats, labels)
+
+is_target_dir = strcmp( cats, 'target_direction' );
+is_reach_dir = strcmp( cats, 'reach_direction' );
+
+labs = labels;
+
+labs(is_target_dir) = cellfun( @(x) sprintf('target-%s', x), labels(is_target_dir), 'un', 0 );
+labs(is_reach_dir) = cellfun( @(x) sprintf('reach-%s', x), labels(is_reach_dir), 'un', 0 );
 
 end
