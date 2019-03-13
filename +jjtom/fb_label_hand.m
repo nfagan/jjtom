@@ -4,8 +4,8 @@ if ( nargin < 2 )
   mask = rowmask( labs );
 end
 
-left_roi_selectors = { 'apparatusl', 'facel' };
-right_roi_selectors = { 'apparatusr', 'facer' };
+left_roi_selectors = { 'apparatusl', 'facel', 'boxl' };
+right_roi_selectors = { 'apparatusr', 'facer', 'boxr' };
 
 hand_left_selectors = { 'KrLu', 'KrRe', 'CnLu', 'CnRe' };
 hand_right_selectors = { 'KrRu', 'KrLe', 'CnRu', 'CnLe' };

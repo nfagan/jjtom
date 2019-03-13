@@ -6,23 +6,28 @@ defaults.look_back = -3000;
 defaults.look_ahead = 3000;
 defaults.loop_runner = [];
 defaults.normalize_looking_duration = false;
+defaults.normalize_per_roi = true;
 defaults.proportional_fixation_looking_duration = false;
 defaults.maximum_normalization_window = inf;
 defaults.fixation_looking_duration_proportions_each = {};
 defaults.separate_apparatus_and_face = false;
+defaults.event_subdir = 'events';
+defaults.recoded_normalization_event_name = 'ft1-start';
+defaults.recoded_normalization_look_ahead = 5e3;
+defaults.not_files = {};
 
 params = jjtom.parsestruct( defaults, varargin );
 conf = params.config;
 
 if ( isempty(params.loop_runner) )
-  inputs = { 'events', 'edf/samples', 'edf/events', 'roi', 'labels' };
+  inputs = { params.event_subdir, 'edf/samples', 'edf/events', 'roi', 'labels' };
   inputs = jjtom.get_datadir( inputs, conf );
   
   runner = shared_utils.pipeline.LoopedMakeRunner();
   
   runner.is_parallel =              params.is_parallel;
   runner.input_directories =        inputs;
-  runner.filter_files_func =        @(x) jjtom.files_containing( x, params.files );
+  runner.filter_files_func =        @(x) shared_utils.io.filter_files( x, params.files, params.not_files );
   runner.get_identifier_func =      @(x, y) sprintf( '%s.mat', x.fileid );
   runner.get_directory_name_func =  @get_directory_name;
   
@@ -81,7 +86,7 @@ end
 
 function out = main(files, params)
 
-evt_file =  shared_utils.general.get( files, 'events' );
+evt_file =  shared_utils.general.get( files, params.event_subdir );
 lab_file =  shared_utils.general.get( files, 'labels' );
 samp_file = shared_utils.general.get( files, 'samples' );
 edf_event_file = shared_utils.general.get( files, 'edf/events' );
@@ -92,6 +97,7 @@ metalabs = fcat.from( lab_file.labels, lab_file.categories );
 bin_width = params.bin_width;
 look_back = params.look_back;
 look_ahead = params.look_ahead;
+is_recoded_events = strcmp( params.event_subdir, 'recoded_events' );
 
 bin_ts = look_back:bin_width:(look_ahead + bin_width);
 
@@ -127,8 +133,14 @@ end
 
 if ( params.normalize_looking_duration )  
   % Normalize to period after occulder down, but before reach
-  od3 = evt_file.events( strcmp(evt_file.key, 'od-3') );
-  reach = evt_file.events( strcmp(evt_file.key, 'test-reach') );
+  if ( is_recoded_events )
+    norm_name = params.recoded_normalization_event_name;
+    od3 = evt_file.events( strcmp(evt_file.key, norm_name) );
+    reach = od3 + params.recoded_normalization_look_ahead;
+  else
+    od3 = evt_file.events( strcmp(evt_file.key, 'od-3') );
+    reach = evt_file.events( strcmp(evt_file.key, 'test-reach') );
+  end
   
   start_norm = od3;
   end_norm = reach;
@@ -148,6 +160,13 @@ tmp_lookdur_timecourse = [];
 for i = 1:n_combs
   evt_ind = inds(1, i);
   roi_ind = inds(2, i);
+  
+  if ( params.normalize_per_roi )
+    norm_roi_ind = roi_ind;
+  else
+    norm_roi_ind = find( strcmp(roi_names, 'apparatus') );
+    assert( ~isempty(norm_roi_ind), 'No apparatus normalization roi found.' );
+  end
 
   roi_name = roi_names{roi_ind};
 
@@ -162,6 +181,7 @@ for i = 1:n_combs
 
   ib_pos = columnize( ibs(roi_ind, :) );
   ib_fix = ib_fixs{roi_ind};
+  norm_ib_pos = columnize( ibs(norm_roi_ind, :) );
 
   binned_n = zeros( 1, numel(bin_ts)-1 );
   
@@ -182,7 +202,7 @@ for i = 1:n_combs
   
   if ( params.normalize_looking_duration )
     is_ib_normt = t >= start_norm & t <= end_norm;
-    look_dur = look_dur / nnz( ib_pos(is_ib_normt) );
+    look_dur = look_dur / nnz( norm_ib_pos(is_ib_normt) );
   end
   
   if ( params.normalize_looking_duration )

@@ -9,20 +9,28 @@ cron_files = { 'CnLu', 'CnRu', 'CnLe', 'CnRe' };
 files = union( kuro_files, cron_files );
 % files = cron_files;
 
-max_t = 10e3;
+max_t = 0;
+look_back = -500;
+is_normalized = true;
+do_save = false;
+bin_width = 500;
 
 outs = jjtom_get_looking_probability_timecourse( ...
     'config', conf ...
   , 'files', files ...
-  , 'bin_width', 500 ...
-  , 'look_back', 0 ...
+  , 'bin_width', bin_width ...
+  , 'look_back', look_back ...
   , 'look_ahead', max_t ...
   , 'is_parallel', true ...
   , 'separate_apparatus_and_face', true ...
-  , 'normalize_looking_duration', true ...
+  , 'normalize_looking_duration', is_normalized ...
   , 'proportional_fixation_looking_duration', false ...
   , 'maximum_normalization_window', Inf ...
   , 'fixation_looking_duration_proportions_each', {'apparatusl', 'apparatusr', 'face'} ...
+  , 'event_subdir', 'recoded_events' ...
+  , 'recoded_normalization_event_name', 'occluder down' ...
+  , 'recoded_normalization_look_ahead', 3e3 ...
+  , 'normalize_per_roi', false ...
 );
 
 plot_p = jjtom.get_datadir( 'plots', conf );
@@ -68,7 +76,7 @@ do_save = false;
 assert_ispair( pltdat, pltlabs );
 
 mask = fcat.mask( pltlabs ...
-  , @find, {'test-reach'} ...
+  , @find, {'shoulder move'} ...
   , @find, {'apparatusl', 'apparatusr'} ...
   , @find, 'cron' ...
 );
@@ -97,7 +105,7 @@ end
 
 %%  time course -- looks to reach
 
-do_save = true;
+do_save = false;
 
 % pltdat = outs.probabilities;
 pltdat = outs.duration_timecourse;
@@ -213,7 +221,7 @@ pltlabs = outs.labels';
 assert_ispair( pltdat, pltlabs );
 
 mask = fcat.mask( pltlabs ...
-  , @find, {'test-reach'} ...
+  , @find, {'hand in box'} ...
   , @find, {'apparatusl', 'apparatusr'} ...
 );
 
@@ -238,15 +246,89 @@ pcats = { 'monkey', 'event' };
 
 axs = pl.bar( pltdat(mask), pltlabs(mask), xcats, gcats, pcats );
 
-%%  looking duratinon -- to apparatus overall
+%%  looking duration -- to apparatus side
 
-pltdat = outs.fix_looking_duration;
+base_subdir = 'new_norm_task2';
+do_save = false;
+
+pltdat = outs.looking_duration;
 pltlabs = outs.labels';
 
 assert_ispair( pltdat, pltlabs );
 
 mask = fcat.mask( pltlabs ...
-  , @find, {'test-reach'} ...
+  , @find, {'hand in box'} ...
+  , @find, {'apparatusl', 'apparatusr'} ...
+);
+
+replace( pltlabs, {'apparatusl', 'apparatusr'}, 'apparatus-lr' );
+
+pl = plotlabeled.make_common();
+pl.x_tick_rotation = 0;
+pl.fig = figure(3);
+
+xcats = { 'expected_type' };
+gcats = { 'roi' };
+pcats = { 'event' };
+
+axs = pl.bar( pltdat(mask), pltlabs(mask), xcats, gcats, pcats );
+
+if ( do_save )
+  save_p = fullfile( plot_p, 'duration', dsp3.datedir, base_subdir );
+  dsp3.req_savefig( gcf, save_p, pltlabs(mask), cshorzcat(gcats, pcats, xcats) ...
+    , 'apparatus_side' );
+end
+
+%%  looking duration -- to box hand *will be in*
+
+base_subdir = 'anticipatory_task2';
+do_save = false;
+
+pltdat = outs.looking_duration;
+pltlabs = outs.labels';
+
+assert_ispair( pltdat, pltlabs );
+
+mask = fcat.mask( pltlabs ...
+  , @find, {'shoulder move'} ...
+  , @find, {'apparatusl', 'apparatusr'} ...
+);
+
+[hand_labs, hand_ind] = jjtom.fb_label_hand( pltlabs', mask );
+[apple_labs, apple_ind] = jjtom.fb_label_apple( pltlabs', mask );
+
+hand_dat = pltdat(hand_ind);
+apple_dat = pltdat(apple_ind);
+
+pltdat = [ hand_dat; apple_dat ];
+pltlabs = prune( [hand_labs(hand_ind); apple_labs(apple_ind)] );
+
+pl = plotlabeled.make_common();
+pl.x_tick_rotation = 0;
+pl.fig = figure(3);
+
+xcats = { 'expected_type' };
+gcats = { 'roi' };
+pcats = { 'event' };
+
+axs = pl.bar( pltdat, pltlabs, xcats, gcats, pcats );
+
+if ( do_save )
+  save_p = fullfile( plot_p, 'duration', dsp3.datedir, base_subdir );
+  dsp3.req_savefig( gcf, save_p, pltlabs, cshorzcat(gcats, pcats, xcats) ...
+    , 'apparatus_side' );
+end
+
+
+%%  looking duratinon -- to apparatus overall
+
+pltdat = outs.looking_duration;
+pltlabs = outs.labels';
+
+assert_ispair( pltdat, pltlabs );
+
+mask = fcat.mask( pltlabs ...
+  , @find, {'hand in box'} ...
   , @find, {'apparatus'} ...
 );
 
@@ -256,7 +338,7 @@ pl.fig = figure(3);
 
 xcats = { 'roi' };
 gcats = { 'expected_type' };
-pcats = { 'event', 'monkey' };
+pcats = { 'event' };
 
 axs = pl.bar( pltdat(mask), pltlabs(mask), xcats, gcats, pcats );
 
@@ -268,19 +350,19 @@ end
 
 %%  looking duration -- to apple or hand
 
-do_save = true;
+do_save = false;
 is_per_monkey = false;
 
-pltdat = outs.fix_looking_duration;
+pltdat = outs.looking_duration;
 pltlabs = outs.labels';
 
-use_roi = 'apple';
-side_roi = 'face';
+use_roi = 'hand';
+side_roi = 'apparatus';
 
 assert_ispair( pltdat, pltlabs );
 
 mask = fcat.mask( pltlabs ...
-  , @find, {'test-reach'} ...
+  , @find, {'hand in box'} ...
   , @find, {sprintf('%sl', side_roi), sprintf('%sr', side_roi)} ...
 );
 

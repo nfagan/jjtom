@@ -1,6 +1,7 @@
 function jjtom_bar_durations2(varargin)
 
 defaults.do_normalize = true;
+defaults.normalize_per_roi = true;
 defaults.per_monkey = true;
 defaults.do_save = false;
 defaults.target_roi = 'apparatus-lr';
@@ -9,10 +10,21 @@ defaults.config = jjtom.config.load();
 defaults.files = {};
 defaults.not_files = {};
 defaults.separate_apparatus_and_face = false;
+defaults.event_subdir = 'events';
+defaults.recoded_reach_event_name = 'hand in box';
+defaults.recoded_normalization_event_name = 'ft2-start';
+defaults.recoded_normalization_look_ahead = 5e3;
+defaults.base_prefix = '';
+defaults.base_subdir = '';
 
 params = jjtom.parsestruct( defaults, varargin );
 
 conf = params.config;
+events_subdir = validatestring( params.event_subdir, {'events', 'recoded_events'} );
+base_prefix = params.base_prefix;
+base_subdir = params.base_subdir;
+
+is_recoded_events = strcmp( events_subdir, 'recoded_events' );
 
 base_plotp = fullfile( conf.PATHS.data_root, 'plots' );
 
@@ -20,7 +32,7 @@ fix_p = jjtom.get_datadir( 'edf/events', conf );
 roi_p = jjtom.get_datadir( 'roi', conf );
 lab_p = jjtom.get_datadir( 'labels', conf );
 
-evt_mats = jjtom.get_datafiles( 'events', conf );
+evt_mats = jjtom.get_datafiles( events_subdir, conf );
 evt_mats = shared_utils.io.filter_files( evt_mats, params.files, params.not_files );
 
 do_normalize = params.do_normalize;
@@ -28,8 +40,8 @@ per_monk = params.per_monkey;
 do_save = params.do_save;
 
 min_dur = 25;
-look_back = -2e3;
-look_ahead = 10e3;
+look_back = 0;
+look_ahead = 5e3;
 
 nfixs = [];
 durs = [];
@@ -46,6 +58,16 @@ for i = 1:numel(evt_mats)
   roi_file = jjtom.fload( fullfile(roi_p, fname) );
   
   metalabs = fcat.from( lab_file.labels, lab_file.categories );
+  
+  if ( is_recoded_events )
+    recoded_reach_event_name = params.recoded_reach_event_name;
+    recoded_reach_event_name_idx = strcmp( evt_file.key, recoded_reach_event_name );    
+    
+    assert( nnz(recoded_reach_event_name_idx) == 1, 'Missing recoded event name: "%s".' ...
+      , recoded_reach_event_name );
+    
+    evt_file.key{recoded_reach_event_name_idx} = 'test-reach';
+  end
   
   evts = evt_file.events;
   
@@ -104,19 +126,28 @@ for i = 1:numel(evt_mats)
   % norm
   %
   
-  evt1 = strcmp( evt_file.key, 'od-3' );
-  evt2 = strcmp( evt_file.key, 'test-reach' );
-  assert( sum(evt1 | evt2) == 2, 'Missing events' );
-  
-  evt1 = evt_file.events(evt1);
-  evt2 = evt_file.events(evt2);
+  if ( is_recoded_events )
+    evt1 = evt_file.events( strcmp(evt_file.key, params.recoded_normalization_event_name) );
+    evt2 = evt1 + params.recoded_normalization_look_ahead;
+    
+  else
+    evt1 = strcmp( evt_file.key, 'od-3' );
+    evt2 = strcmp( evt_file.key, 'test-reach' );
+
+    assert( sum(evt1 | evt2) == 2, 'Missing events' );
+
+    evt1 = evt_file.events(evt1);
+    evt2 = evt_file.events(evt2);
+  end
   
   ib_t = fix_starts >= evt1 & fix_starts <= evt2;
   
   for j = 1:numel(rois)
-    roi = rois{j};
-    
-    ib_pos = ib_fixs{j};
+    if ( params.normalize_per_roi )
+      ib_pos = ib_fixs{j};
+    else
+      ib_pos = ib_fixs{strcmp(roi_names, 'apparatus')};
+    end
     
     ib_evts = ib_t & ib_pos;
     
@@ -182,7 +213,7 @@ prune( replabs );
 pltdat = alldata;
 pltlabs = replabs';
 
-prefix = 'overall__duration';
+prefix = sprintf( '%soverall__duration', base_prefix );
 
 normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
 prefix = sprintf( '%s_%s', normpref, prefix );
@@ -203,7 +234,7 @@ mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', 'apparatus'} );
 pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
 plot_p = fullfile( jjtom.fname(pltlabs(mask), 'measure'), jjtom.datedir );
-plot_p = fullfile( base_plotp, plot_p );
+plot_p = fullfile( base_plotp, plot_p, base_subdir, normpref );
 
 if ( do_save )  
   cats = dsp3.nonun_or_all( pltlabs, unique(cshorzcat(xs, groups, panels)) );
@@ -223,7 +254,7 @@ replace( pltlabs, {'box-left', 'box-right'}, 'box-lr' );
 replace( pltlabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
 replace( pltlabs, {'face-left', 'face-right'}, 'face-lr' );
 
-prefix = 'overall__duration';
+prefix = sprintf( '%soverall__duration', base_prefix );
 
 normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
 prefix = sprintf( '%s_%s', normpref, prefix );
@@ -244,7 +275,7 @@ mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', params.apple_or_han
 pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
 plot_p = fullfile( jjtom.fname(pltlabs(mask), 'measure'), jjtom.datedir );
-plot_p = fullfile( base_plotp, plot_p );
+plot_p = fullfile( base_plotp, plot_p, base_subdir, normpref );
 
 if ( do_save )  
   cats = dsp3.nonun_or_all( pltlabs, unique(cshorzcat(xs, groups, panels)) );

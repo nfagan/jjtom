@@ -1,3 +1,5 @@
+function jjtom_percent_timecourse()
+
 tic;
 
 conf = jjtom.tmp_setdataroot( '/Volumes/My Passport/NICK/Chang Lab 2016/jess/tom' );
@@ -16,8 +18,8 @@ evt_mats = jjtom.get_datafiles( 'events', conf );
 evt_mats = shared_utils.io.filter_files( evt_mats, files, not_files );
 
 bin_width = 250;
-look_back = -3e3;
-look_ahead = 3e3;
+look_back = -4e3;
+look_ahead = 4e3;
 look_ahead = look_ahead + bin_width;
 
 bin_ts = look_back:bin_width:look_ahead;
@@ -131,7 +133,7 @@ toc;
 do_save = true;
 
 prefix = 'percent_inbounds_full';
-selectors = { 'test-reach', 'apparatus-left', 'apparatus-right', 'reach-to-right' };
+selectors = { 'test-reach', 'apparatus-left', 'apparatus-right', 'reach-to-left' };
 
 mask = find( full_labs, selectors );
 
@@ -178,7 +180,8 @@ replace( to_pltlabs, {'box-left', 'box-right'}, 'box-lr' );
 replace( to_pltlabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
 
 % selectors = { 'test-reach', 'box-lr', 'hand' };
-selectors = { 'test-reach', 'apparatus-lr', 'apple' };
+% selectors = { 'test-reach', 'apparatus-lr', 'apple' };
+selectors = { 'test-reach', 'apparatus-lr', 'hand' };
 
 mask = find( to_pltlabs, selectors );
 
@@ -217,6 +220,7 @@ if ( do_save )
   jjtom.savefig( gcf, fullfile(plot_p, fname) );
 end
 
+end
 
 
 

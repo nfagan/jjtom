@@ -2,9 +2,10 @@ conf = jjtom.tmp_setdataroot( '/Volumes/My Passport/NICK/Chang Lab 2016/jess/tom
 
 edf_files = jjtom.get_datafiles( 'edf', conf, '.mat' );
 roi_p = jjtom.get_datadir( 'roi', conf );
+evt_p = jjtom.get_datadir( 'recoded_events', conf );
 plot_p = fullfile( conf.PATHS.data_root, 'plots', 'traces_remeasure', datestr(now, 'mmddyy') );
 
-edf_files = shared_utils.cell.containing( edf_files, {'Kr'} );
+edf_files = shared_utils.cell.containing( edf_files, {'CnLe', 'CnRe'} );
 % edf_files = shared_utils.cell.containing( edf_files, {'Hi'} );
 
 % eph_edfs = shared_utils.cell.containing( edf_files, {'LyLC'} );
@@ -13,9 +14,10 @@ edf_files = shared_utils.cell.containing( edf_files, {'Kr'} );
 % edf_files = [ eph_edfs, t_edfs ];
 
 % evts = 5:6;
-evts = 6;
+% evts = 6;
+evts = 9;
 look_back = 0e3;
-look_ahead = 10e3;
+look_ahead = 3e3;
 
 edf_files = edf_files( ~shared_utils.cell.contains(edf_files, {'t1', 't2', 't3'}) );
 
@@ -25,6 +27,7 @@ save_fig = true;
 flip_y = true;
 one_plot = true;
 ylims = [0, 1.2];
+use_event_file = true;
 
 if ( one_plot )
   assert( numel(evts) == 1, 'Only use one event if using one_plot.' );
@@ -37,6 +40,7 @@ for j = 1:numel(edf_files)
   id = edf_file.fileid;
   
   roi_file = shared_utils.io.fload( fullfile(roi_p, jjtom.ext(id, '.mat')) );
+  events_file = shared_utils.io.fload( fullfile(evt_p, jjtom.ext(id, '.mat')) );
 
   sync_pulses = strcmp( edf_file.Events.Messages.info, 'sync' );
   sync_times = edf_file.Events.Messages.time( sync_pulses );
@@ -56,9 +60,10 @@ for j = 1:numel(edf_files)
     hold off;
   end
   
-  within_evt_bounds = evts <= numel(sync_times);
-  
-  evts = evts(within_evt_bounds);
+  if ( ~use_event_file )
+    within_evt_bounds = evts <= numel(sync_times);
+    evts = evts(within_evt_bounds);
+  end
 
   if ( one_plot )
     shape = shared_utils.plot.get_subplot_shape( numel(edf_files) );
@@ -83,13 +88,23 @@ for j = 1:numel(edf_files)
     end
     set( ax, 'nextplot', 'replace' );
 
-    event_index = evts(idx);
-
-    start_time = sync_times(event_index);
+    if ( use_event_file )
+      start_time = events_file.events(evts(idx));
+      event_index = evts(idx);
+    else
+      event_index = evts(idx);
+      start_time = sync_times(event_index);
+    end
 
     t = edf_file.Samples.time;
     start_ind = find( t == start_time + look_back );
-    stop_ind = find( t == start_time + look_ahead );
+    
+    if ( use_event_file )
+      stop_event_ind = events_file.events( strcmp(events_file.key, 'shoulder move') );
+      stop_ind = find( t == stop_event_ind );
+    else
+      stop_ind = find( t == start_time + look_ahead );
+    end
 
     x = total_x(start_ind:stop_ind);
     y = total_y(start_ind:stop_ind);
