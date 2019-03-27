@@ -3,23 +3,22 @@ function [counts, labs] = task2_box2(count_outputs)
 counts = count_outputs.fixation_counts;
 labs = addsetcat( count_outputs.labels, 'task-interval', 'box2' );
 
-expected = find( labs, 'expected' );
-unexpected = find( labs, 'unexpected' );
-
-target_left = find( labs, 'target-left' );
-target_right = find( labs, 'target-right' );
-
-left_expected = find( labs, 'boxr', intersect(target_left, expected) );
-right_expected = find( labs, 'boxl', intersect(target_right, expected) );
-
-left_unexpected = find( labs, 'boxr', intersect(target_left, unexpected) );
-right_unexpected = find( labs, 'boxl', intersect(target_right, unexpected) );
-
-is_box2 = union( ...
-    union(left_expected, right_expected) ...
-  , union(left_unexpected, right_unexpected) ...
-);
+is_box2 = jjtom.task2_is_side_apple_enters1( labs, 'boxl', 'boxr' );
 
 setcat( labs, 'roi', 'target-roi', is_box2 );
+
+label_other_rois( labs, is_box2 );
+
+prune( labs );
+
+end
+
+function label_other_rois(labs, is_box2)
+
+is_box = find( labs, {'boxl', 'boxr'} );
+
+other_box = setdiff( is_box, is_box2 );
+
+setcat( labs, 'roi', 'other-box', other_box );
 
 end

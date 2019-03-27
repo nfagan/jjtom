@@ -7,6 +7,7 @@ defaults.base_subdir = '';
 defaults.base_prefix = '';
 defaults.is_parallel = true;
 defaults.pad_face_y = 0;
+defaults.is_per_monkey = false;
 
 params = jjtom.parsestruct( defaults, varargin );
 
@@ -56,8 +57,8 @@ end
 
 plot_roi_proportions( counts, labels', params );
 
-plot_each_monkey( counts, labels', params );
-plot_all_monkeys( counts, labels', params );
+% plot_each_monkey( counts, labels', params );
+% plot_all_monkeys( counts, labels', params );
 
 end
 
@@ -70,7 +71,7 @@ end
 
 function rois = get_proportion_rois()
 
-rois = { 'target-roi', 'face', 'other-box', 'boxl', 'boxr', 'middle_fruit' };
+rois = { 'target-roi', 'face', 'other-box', 'boxl', 'boxr', 'box-apple-enters', 'middle_fruit' };
 
 end
 
@@ -100,19 +101,24 @@ pl = plotlabeled.make_common();
 pl.add_points = false;
 pl.points_are = 'id';
 pl.marker_size = 5;
+pl.y_lims = [0, 0.7];
 
 roi_proportion_names = get_proportion_rois();
 labels = make_proportion_labels( counts, labels );
 
 mask = fcat.mask( labels ...
-  , @find, roi_proportion_names ...
+  , @findor, roi_proportion_names ...
   , @find, combs(labels, 'monkey') ...
 );
 
 fcats = { 'task-interval' };
 xcats = { 'roi' };
 gcats = { 'task-interval' };
-pcats = { 'monkey' };
+pcats = { 'task-interval' };
+
+if ( params.is_per_monkey )
+  pcats{end+1} = 'monkey';
+end
 
 pl.x_order = combs( labels, 'task-interval', mask );
 
@@ -126,7 +132,8 @@ for i = 1:numel(fig_I)
   pl.bar( props, prop_labels, xcats, gcats, pcats );
   
   if ( params.do_save )
-    plot_p = get_plot_p( params, 'per_monkey' );
+    plot_p = get_plot_p( params ...
+      , ternary(params.is_per_monkey, 'per_monkey', 'all_monkeys'), 'roi_proportions' );
     pltcats = unique( cshorzcat(pcats, gcats) );
   
     shared_utils.plot.fullscreen( gcf );
@@ -134,6 +141,7 @@ for i = 1:numel(fig_I)
     dsp3.req_savefig( gcf, plot_p, prop_labels, pltcats, params.base_prefix );
   end
 end
+
 end
 
 function plot_each_monkey(pltdat, pltlabs, params)

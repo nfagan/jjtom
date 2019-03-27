@@ -1,11 +1,11 @@
-function [counts, labs] = task2_apple_move2(count_outputs)
+function [counts, labs] = task2_head_reappears(count_outputs)
 
 counts = count_outputs.fixation_counts;
-labs = addsetcat( count_outputs.labels, 'task-interval', 'apple-move2' );
+labs = addsetcat( count_outputs.labels, 'task-interval', 'head-reappears' );
 
-is_fruit = find( labs, 'middle_fruit' );
+is_face = find( labs, 'face' );
 
-setcat( labs, 'roi', 'target-roi', is_fruit );
+setcat( labs, 'roi', 'target-roi', is_face );
 
 label_boxes( labs );
 

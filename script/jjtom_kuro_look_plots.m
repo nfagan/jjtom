@@ -9,8 +9,8 @@ cron_files = { 'CnLu', 'CnRu', 'CnLe', 'CnRe' };
 files = union( kuro_files, cron_files );
 % files = cron_files;
 
-look_ahead = 4e3;
-look_back = -4e3;
+look_ahead = 6e3;
+look_back = 0;
 is_normalized = true;
 do_save = false;
 bin_width = 500;
@@ -258,35 +258,43 @@ axs = pl.bar( pltdat(mask), pltlabs(mask), xcats, gcats, pcats );
 base_subdir = 'new_norm_task2';
 do_save = true;
 
-pltdat = outs.looking_duration;
-pltlabs = outs.labels';
+use_rois = { 'face', 'apparatus', 'box' };
 
-assert_ispair( pltdat, pltlabs );
+for i = 1:numel(use_rois)
+  left_roi = sprintf( '%sl', use_rois{i} );
+  right_roi = sprintf( '%sr', use_rois{i} );
 
-mask = fcat.mask( pltlabs ...
-  , @find, {'hand in box'} ...
-  , @find, {'facel', 'facer'} ...
-);
+  pltdat = outs.looking_duration;
+  pltlabs = outs.labels';
 
-replace( pltlabs, {'apparatusl', 'apparatusr'}, 'apparatus-lr' );
-replace( pltlabs, {'facel', 'facer'}, 'face-lr' );
+  assert_ispair( pltdat, pltlabs );
 
-pl = plotlabeled.make_common();
-pl.x_tick_rotation = 0;
-pl.fig = figure(3);
+  mask = fcat.mask( pltlabs ...
+    , @find, {'hand in box'} ...
+    , @find, {left_roi, right_roi} ...
+  );
 
-xcats = { 'expected_type' };
-gcats = { 'roi' };
-pcats = { 'event' };
+  replace( pltlabs, {'apparatusl', 'apparatusr'}, 'apparatus-lr' );
+  replace( pltlabs, {'facel', 'facer'}, 'face-lr' );
+  replace( pltlabs, {'boxl', 'boxr'}, 'box-lr' );
 
-axs = pl.bar( pltdat(mask), pltlabs(mask), xcats, gcats, pcats );
+  pl = plotlabeled.make_common();
+  pl.x_tick_rotation = 0;
+  pl.fig = figure(3);
 
-if ( do_save )
-  save_p = fullfile( plot_p, 'duration', dsp3.datedir, base_subdir );
-  dsp3.req_savefig( gcf, save_p, pltlabs(mask), cshorzcat(gcats, pcats, xcats) ...
-    , 'apparatus_side' );
+  xcats = { 'expected_type' };
+  gcats = { 'roi' };
+  pcats = { 'event' };
+
+  axs = pl.bar( pltdat(mask), pltlabs(mask), xcats, gcats, pcats );
+
+  if ( do_save )
+    save_p = fullfile( plot_p, 'duration', dsp3.datedir, base_subdir );
+    dsp3.req_savefig( gcf, save_p, pltlabs(mask), cshorzcat(gcats, pcats, xcats) ...
+      , 'apparatus_side' );
+  end
 end
-
+  
 %%  looking duration -- to box hand *will be in*
 
 base_subdir = 'anticipatory_task2';

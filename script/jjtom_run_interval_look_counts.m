@@ -1,26 +1,16 @@
-do_save = false;
+do_save = true;
 
 inputs = struct();
-inputs.base_subdir = 'test';
+inputs.base_subdir = '';
 inputs.pad_face_y = 0.05;
 inputs.do_save = do_save;
 inputs.is_parallel = true;
-
-jjtom_task1_interval_look_counts( inputs );
-% jjtom_task2_interval_look_counts( inputs );
+inputs.is_per_monkey = false;
 
 %%
 
-do_save = false;
+jjtom_task1_interval_look_counts( inputs );
 
-sequence_outputs = jjtom_interval_look_counts_sequence( ...
-    'files', jjtom.task2_files() ...
-  , 'start_event', 'head reappears' ...
-  , 'stop_event', 'shoulder move' ...
-  , 'look_back', 0 ...
-  , 'look_ahead', 0 ...
-  , 'is_parallel', false ...
-  , 'pad_face_y', 0.05 ...
-);
+%%
 
-jjtom_task2_anticipatory_looks( sequence_outputs );
+jjtom_task2_interval_look_counts( inputs );

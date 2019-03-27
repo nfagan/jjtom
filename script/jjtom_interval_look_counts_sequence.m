@@ -52,14 +52,13 @@ end
 
 function [start_time, stop_time] = get_start_stop_time(evt_file, params)
 
-start_event_ind = strcmp( evt_file.key, params.start_event );
-stop_event_ind = strcmp( evt_file.key, params.stop_event );
+start_evt = params.start_event;
+stop_evt = params.stop_event;
+lb = params.look_back;
+la = params.look_ahead;
 
-assert( any(start_event_ind) && any(stop_event_ind) ...
-  , 'No events matched "%s" or "%s".', params.start_event, params.stop_event );
-
-start_time = evt_file.events(start_event_ind) + params.look_back;
-stop_time = evt_file.events(stop_event_ind) + params.look_ahead;
+[start_time, stop_time] = ...
+  jjtom.get_start_stop_times_from_events_file( evt_file, start_evt, stop_evt, lb, la );
 
 end
 
