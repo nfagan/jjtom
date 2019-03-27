@@ -6,6 +6,8 @@ defaults.do_normalize = true;
 defaults.config = jjtom.config.load();
 defaults.files = {};
 defaults.not_files = {};
+defaults.look_back = -3e3;
+defaults.look_ahead = 3.5e3;
 
 params = dsp3.parsestruct( defaults, varargin );
 
@@ -21,8 +23,8 @@ evt_mats = jjtom.get_datafiles( 'events', conf );
 evt_mats = shared_utils.io.filter_files( evt_mats, params.files, params.not_files );
 
 min_dur = 25;
-look_back = -3e3;
-look_ahead = 3.5e3;
+look_back = params.look_back;
+look_ahead = params.look_ahead;
 
 bin_width = 500;
 bin_ts = look_back:bin_width:look_ahead;

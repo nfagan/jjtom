@@ -9,8 +9,8 @@ cron_files = { 'CnLu', 'CnRu', 'CnLe', 'CnRe' };
 files = union( kuro_files, cron_files );
 % files = cron_files;
 
-max_t = 0;
-look_back = -500;
+look_ahead = 4e3;
+look_back = -4e3;
 is_normalized = true;
 do_save = false;
 bin_width = 500;
@@ -20,7 +20,7 @@ outs = jjtom_get_looking_probability_timecourse( ...
   , 'files', files ...
   , 'bin_width', bin_width ...
   , 'look_back', look_back ...
-  , 'look_ahead', max_t ...
+  , 'look_ahead', look_ahead ...
   , 'is_parallel', true ...
   , 'separate_apparatus_and_face', true ...
   , 'normalize_looking_duration', is_normalized ...
@@ -105,12 +105,14 @@ end
 
 %%  time course -- looks to reach
 
-do_save = false;
+do_save = true;
 
-% pltdat = outs.probabilities;
-pltdat = outs.duration_timecourse;
+pltdat = outs.probabilities;
+% pltdat = outs.duration_timecourse;
 pltlabs = outs.labels';
 time_course = outs.t;
+
+base_subdir = 'apparatus';
 
 side_roi = 'apparatus';
 left_roi = sprintf( '%sl', side_roi );
@@ -121,16 +123,21 @@ t_window = [ 0, 1e3 ];
 assert_ispair( pltdat, pltlabs );
 
 mask = fcat.mask( pltlabs ...
-  , @find, {'test-reach'} ...
+  , @find, {'hand in box'} ...
   , @find, {left_roi, right_roi} ...
 );
 
 is_look_to_reach_right = find( pltlabs, {'reach-right', right_roi } );
 is_look_to_reach_left = find( pltlabs, {'reach-left', left_roi } );
-is_look_to_reach = union( is_look_to_reach_left, is_look_to_reach_right );
+% is_look_reach_right2 = find( pltlabs, {'reach-right', left_roi, 'expected'} );
+% is_look_reach_left2 = find( pltlabs, {'reach-left', right_roi, 'expected'} );
 
-is_look_to_non_reach_right = find( pltlabs, {'reach-right', left_roi } );
-is_look_to_non_reach_left = find( pltlabs, {'reach-left', right_roi } );
+is_look_to_reach = union( is_look_to_reach_left, is_look_to_reach_right );
+% is_look_reach2 = union( is_look_reach_left2, is_look_reach_right2 );
+% is_look_to_reach = union( is_look_to_reach, is_look_reach2 );
+
+is_look_to_non_reach_right = find( pltlabs, {'reach-right', left_roi, 'unexpected' } );
+is_look_to_non_reach_left = find( pltlabs, {'reach-left', right_roi, 'unexpected' } );
 is_look_to_non_reach = union( is_look_to_non_reach_left, is_look_to_non_reach_right );
 
 setcat( pltlabs, 'roi', 'reach', is_look_to_reach );
@@ -156,7 +163,7 @@ shared_utils.plot.hold( axs, 'on' );
 shared_utils.plot.add_vertical_lines( axs, find(time_course == 0) );
 
 if ( do_save )
-  save_p = fullfile( plot_p, 'duration_timecourse', datestr(now, 'mmddyy') );
+  save_p = fullfile( plot_p, 'duration_timecourse', dsp3.datedir, base_subdir );
   dsp3.req_savefig( gcf, save_p, pltlabs(mask), cshorzcat(gcats, pcats) ...
     , side_roi );
 end
@@ -249,7 +256,7 @@ axs = pl.bar( pltdat(mask), pltlabs(mask), xcats, gcats, pcats );
 %%  looking duration -- to apparatus side
 
 base_subdir = 'new_norm_task2';
-do_save = false;
+do_save = true;
 
 pltdat = outs.looking_duration;
 pltlabs = outs.labels';
@@ -258,10 +265,11 @@ assert_ispair( pltdat, pltlabs );
 
 mask = fcat.mask( pltlabs ...
   , @find, {'hand in box'} ...
-  , @find, {'apparatusl', 'apparatusr'} ...
+  , @find, {'facel', 'facer'} ...
 );
 
 replace( pltlabs, {'apparatusl', 'apparatusr'}, 'apparatus-lr' );
+replace( pltlabs, {'facel', 'facer'}, 'face-lr' );
 
 pl = plotlabeled.make_common();
 pl.x_tick_rotation = 0;

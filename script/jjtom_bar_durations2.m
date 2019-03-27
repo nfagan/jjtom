@@ -16,6 +16,9 @@ defaults.recoded_normalization_event_name = 'ft2-start';
 defaults.recoded_normalization_look_ahead = 5e3;
 defaults.base_prefix = '';
 defaults.base_subdir = '';
+defaults.start_event_name = 'test-reach';
+defaults.look_ahead = 5e3;
+defaults.look_back = 0;
 
 params = jjtom.parsestruct( defaults, varargin );
 
@@ -40,8 +43,8 @@ per_monk = params.per_monkey;
 do_save = params.do_save;
 
 min_dur = 25;
-look_back = 0;
-look_ahead = 5e3;
+look_back = params.look_back;
+look_ahead = params.look_ahead;
 
 nfixs = [];
 durs = [];
@@ -229,7 +232,7 @@ if ( ~per_monk )
   collapsecat( pltlabs, 'monkey' );
 end
 
-mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', 'apparatus'} );
+mask = fcat.mask( pltlabs, @find, {params.start_event_name, 'duration', 'apparatus'} );
 
 pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
@@ -270,7 +273,7 @@ if ( ~per_monk )
   collapsecat( pltlabs, 'monkey' );
 end
 
-mask = fcat.mask( pltlabs, @find, {'test-reach', 'duration', params.apple_or_hand, target_roi} );
+mask = fcat.mask( pltlabs, @find, {params.start_event_name, 'duration', params.apple_or_hand, target_roi} );
 
 pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
