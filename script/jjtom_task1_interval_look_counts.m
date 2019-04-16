@@ -8,6 +8,7 @@ defaults.base_prefix = '';
 defaults.is_parallel = true;
 defaults.pad_face_y = 0;
 defaults.is_per_monkey = false;
+defaults.make_figs = true;
 
 params = jjtom.parsestruct( defaults, varargin );
 
@@ -62,10 +63,22 @@ plot_roi_proportions( counts, labels', params );
 
 end
 
+function p = get_data_p(kind, params, varargin)
+
+p = fullfile( jjtom.get_datadir(kind, params.config), 'interval' ...
+  , datestr(now, 'mmddyy'), 'task1', params.base_subdir, varargin{:} );
+
+end
+
+function analysis_p = get_analysis_p(params, varargin)
+
+analysis_p = get_data_p( 'analyses', params, varargin{:} );
+
+end
+
 function plot_p = get_plot_p(params, varargin)
 
-plot_p = fullfile( jjtom.get_datadir('plots', params.config), 'interval' ...
-  , datestr(now, 'mmddyy'), 'task1', params.base_subdir, varargin{:} );
+plot_p = get_data_p( 'plots', params, varargin{:} );
 
 end
 
@@ -128,18 +141,48 @@ for i = 1:numel(fig_I)
   [props, prop_labels] = proportions_of( labels' ...
     , {'id', 'task-interval'}, 'roi', fig_I{i} );
   
-  pl.fig = figure(i);
-  pl.bar( props, prop_labels, xcats, gcats, pcats );
+  path_components = { ...
+      ternary(params.is_per_monkey, 'per_monkey', 'all_monkeys') ...
+    , 'roi_proportions' ...
+  };
   
-  if ( params.do_save )
-    plot_p = get_plot_p( params ...
-      , ternary(params.is_per_monkey, 'per_monkey', 'all_monkeys'), 'roi_proportions' );
-    pltcats = unique( cshorzcat(pcats, gcats) );
-  
-    shared_utils.plot.fullscreen( gcf );
-  
-    dsp3.req_savefig( gcf, plot_p, prop_labels, pltcats, params.base_prefix );
+  if ( params.make_figs )
+    pl.fig = figure(i);
+    axs = pl.bar( props, prop_labels, xcats, gcats, pcats );
+
+    if ( params.do_save )
+      plot_p = get_plot_p( params, path_components{:} );
+      pltcats = unique( cshorzcat(pcats, gcats) );
+
+      shared_utils.plot.fullscreen( gcf );
+
+      dsp3.req_savefig( gcf, plot_p, prop_labels, pltcats, params.base_prefix );
+    end
   end
+  
+  handle_anova( props, prop_labels', path_components, params );
+end
+
+end
+
+function handle_anova(props, prop_labels, path_components, params)
+
+anova_nv_pairs = struct();
+anova_nv_pairs.remove_nonsignificant_comparisons = false;
+
+if ( ~params.is_per_monkey )
+  collapsecat( prop_labels, 'monkey' );
+end
+
+anovas_each = { 'task-interval', 'monkey' };
+factor = 'roi';
+
+anova_outs = dsp3.anova1( props, prop_labels', anovas_each, factor, anova_nv_pairs );
+
+if ( params.do_save )
+  analysis_p = get_analysis_p( params, path_components{:} );
+  
+  dsp3.save_anova_outputs( anova_outs, analysis_p, anovas_each );
 end
 
 end

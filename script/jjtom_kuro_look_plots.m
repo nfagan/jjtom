@@ -1,7 +1,6 @@
-conf = jjtom.tmp_setdataroot( '/Volumes/My Passport/NICK/Chang Lab 2016/jess/tom' );
-data_root = conf.PATHS.data_root;
+function jjtom_kuro_look_plots()
 
-plot_p = fullfile( data_root, 'plots', 'p_inbounds', datestr(now, 'mmddyy') );
+conf = jjtom.config.load();
 
 kuro_files = { 'KrLu', 'KrRu', 'KrLe', 'KrRe' };
 cron_files = { 'CnLu', 'CnRu', 'CnLe', 'CnRe' };
@@ -453,5 +452,6 @@ if ( do_save )
   dsp3.req_savefig( gcf, save_p, pltlabs(mask), cshorzcat(gcats, pcats, xcats) );
 end
 
+end
 
 

@@ -5,12 +5,12 @@ conf = jjtom.config.load();
 do_save = true;
 
 norms = [true, false];
-monks = [true, false];
+monks = [false, true];
 targets = { 'face-lr', 'apparatus-lr', 'box-lr' };
 
 events_subdir = 'recoded_events';
 base_prefix = '';
-base_subdir = 'new_norm_5s_shoulder_move';
+base_subdir = 'new_norm_5s_shoulder_move_no_ephron';
 
 c = combvec( 1:numel(norms), 1:numel(monks), 1:numel(targets) );
 

@@ -24,12 +24,11 @@ params = jjtom.parsestruct( defaults, varargin );
 
 conf = params.config;
 events_subdir = validatestring( params.event_subdir, {'events', 'recoded_events'} );
-base_prefix = params.base_prefix;
-base_subdir = params.base_subdir;
 
 is_recoded_events = strcmp( events_subdir, 'recoded_events' );
 
-base_plotp = fullfile( conf.PATHS.data_root, 'plots' );
+params.base_plotp = fullfile( conf.PATHS.data_root, 'plots' );
+params.base_analysisp = fullfile( conf.PATHS.data_root, 'analyses' );
 
 fix_p = jjtom.get_datadir( 'edf/events', conf );
 roi_p = jjtom.get_datadir( 'roi', conf );
@@ -37,10 +36,6 @@ lab_p = jjtom.get_datadir( 'labels', conf );
 
 evt_mats = jjtom.get_datafiles( events_subdir, conf );
 evt_mats = shared_utils.io.filter_files( evt_mats, params.files, params.not_files );
-
-do_normalize = params.do_normalize;
-per_monk = params.per_monkey;
-do_save = params.do_save;
 
 min_dur = 25;
 look_back = params.look_back;
@@ -165,7 +160,7 @@ end
 
 %%  norm
 
-if ( do_normalize )
+if ( params.do_normalize )
   [I_time, C] = findall( durlabs, getcats(normlabs) );
   
   for i = 1:numel(I_time)
@@ -211,14 +206,22 @@ alldata = [ repdur; repfix ];
 repset( addcat(replabs, 'measure'), 'measure', {'duration', 'nfix'} );
 prune( replabs );
 
+%%
+
+handle_apparatus_looking( alldata, replabs', params );
+handle_per_roi_looking( alldata, replabs', params )
+
+end
+
+function handle_apparatus_looking(pltdat, pltlabs, params)
+
 %%  overall looking
 
-pltdat = alldata;
-pltlabs = replabs';
+prefix = sprintf( '%soverall__duration', params.base_prefix );
 
-prefix = sprintf( '%soverall__duration', base_prefix );
+normpref = ternary( params.do_normalize, 'normalized', 'non-normalized' );
+monkpref = ternary( params.per_monkey, 'per-monkey', 'across-monkey' );
 
-normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
 prefix = sprintf( '%s_%s', normpref, prefix );
 
 pl = plotlabeled.make_common();
@@ -228,27 +231,43 @@ xs = { 'reach_type' };
 groups = { 'event' };
 panels = { 'target', 'measure', 'roi', 'monkey' };
 
-if ( ~per_monk )
+mask = fcat.mask( pltlabs, @find, {params.start_event_name, 'duration', 'apparatus'} );
+mask = findnone( pltlabs, 'ephron', mask );
+
+if ( ~params.per_monkey )
   collapsecat( pltlabs, 'monkey' );
 end
-
-mask = fcat.mask( pltlabs, @find, {params.start_event_name, 'duration', 'apparatus'} );
 
 pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
 plot_p = fullfile( jjtom.fname(pltlabs(mask), 'measure'), jjtom.datedir );
-plot_p = fullfile( base_plotp, plot_p, base_subdir, normpref );
+plot_p = fullfile( params.base_plotp, plot_p, params.base_subdir, normpref );
 
-if ( do_save )  
+if ( params.do_save )  
   cats = dsp3.nonun_or_all( pltlabs, unique(cshorzcat(xs, groups, panels)) );
   dsp3.req_savefig( gcf, plot_p, pltlabs(mask), cats, prefix );
   
 end
 
-%%  overall looking
+%%  ttest
 
-pltdat = alldata;
-pltlabs = replabs';
+ttest_mask = intersect( mask, find(~isnan(pltdat)) );
+
+ttest_outs = dsp3.ttest2( pltdat, pltlabs', {'monkey'}, 'consistent', 'inconsistent' ...
+  , 'mask', ttest_mask );
+
+if ( params.do_save )
+  plot_path_components = fullfile( 'duration', dsp3.datedir, 'task1', params.base_subdir, 'overall', normpref, monkpref );
+  analysis_p = fullfile( params.base_analysisp, plot_path_components );
+  
+  dsp3.save_ttest2_outputs( ttest_outs, analysis_p );
+end
+
+end
+
+function handle_per_roi_looking(pltdat, pltlabs, params)
+
+%%  overall looking
 
 target_roi = params.target_roi;
 
@@ -257,9 +276,11 @@ replace( pltlabs, {'box-left', 'box-right'}, 'box-lr' );
 replace( pltlabs, {'apparatus-left', 'apparatus-right'}, 'apparatus-lr' );
 replace( pltlabs, {'face-left', 'face-right'}, 'face-lr' );
 
-prefix = sprintf( '%soverall__duration', base_prefix );
+prefix = sprintf( '%soverall__duration', params.base_prefix );
 
-normpref = ternary( do_normalize, 'normalized', 'non-normalized' );
+normpref = ternary( params.do_normalize, 'normalized', 'non-normalized' );
+monkpref = ternary( params.per_monkey, 'per-monkey', 'across-monkey' );
+
 prefix = sprintf( '%s_%s', normpref, prefix );
 
 pl = plotlabeled.make_common();
@@ -269,23 +290,37 @@ xs = { 'reach_type' };
 groups = { 'event' };
 panels = { 'target', 'measure', 'roi', 'monkey' };
 
-if ( ~per_monk )
+mask = fcat.mask( pltlabs, @find, {params.start_event_name, 'duration', params.apple_or_hand, target_roi} );
+mask = findnone( pltlabs, 'ephron', mask );
+
+if ( ~params.per_monkey )
   collapsecat( pltlabs, 'monkey' );
 end
-
-mask = fcat.mask( pltlabs, @find, {params.start_event_name, 'duration', params.apple_or_hand, target_roi} );
 
 pl.bar( pltdat(mask), pltlabs(mask), xs, groups, panels );
 
 plot_p = fullfile( jjtom.fname(pltlabs(mask), 'measure'), jjtom.datedir );
-plot_p = fullfile( base_plotp, plot_p, base_subdir, normpref );
+plot_p = fullfile( params.base_plotp, plot_p, params.base_subdir, normpref );
 
-if ( do_save )  
+if ( params.do_save )  
   cats = dsp3.nonun_or_all( pltlabs, unique(cshorzcat(xs, groups, panels)) );
   dsp3.req_savefig( gcf, plot_p, pltlabs(mask), cats, prefix );
 end
 
+%%  ttest
 
+ttest_mask = intersect( mask, find(~isnan(pltdat)) );
+
+ttest_outs = dsp3.ttest2( pltdat, pltlabs', {'monkey', 'roi'} ...
+  , 'consistent', 'inconsistent' ...
+  , 'mask', ttest_mask );
+
+if ( params.do_save )
+  plot_path_components = fullfile( 'duration', dsp3.datedir, 'task1', params.base_subdir, 'per-roi', normpref, monkpref );
+  analysis_p = fullfile( params.base_analysisp, plot_path_components );
+  
+  dsp3.save_ttest2_outputs( ttest_outs, analysis_p );
+end
 
 end
 

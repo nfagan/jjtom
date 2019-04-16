@@ -8,6 +8,8 @@ defaults.time_multiplier = 1;
 defaults.start_offset = 0;
 defaults.start_event = '';
 defaults.roi_names = {};
+defaults.make_movie = false;
+defaults.movie_file = '';
 
 params = jjtom.parsestruct( defaults, varargin );
 
@@ -19,6 +21,12 @@ evt_p = jjtom.get_datadir( 'recoded_events', conf );
 
 window = ptb.Window( params.window_rect );
 open( window );
+
+if ( params.make_movie )
+  movie_handle = initialize_movie( window, params );
+else
+  movie_handle = [];
+end
 
 edf_files = shared_utils.io.findmat( edf_p );
 edf_files = shared_utils.io.filter_files( edf_files, target_file_id );
@@ -53,6 +61,22 @@ data.Value.TASK = task;
 task.Duration = inf;
 task.exit_on_key_down();
 task.run( state );
+
+if ( params.make_movie )
+  close_movie( movie_handle );
+end
+
+end
+
+function movie_handle = initialize_movie(window, params)
+
+movie_handle = Screen( 'CreateMovie', window.WindowHandle, params.movie_file );
+
+end
+
+function close_movie(movie_handle)
+
+Screen( 'FinalizeMovie', movie_handle );
 
 end
 
@@ -179,5 +203,9 @@ draw_rois( window, roi_file, roi_names, cal_rect, window_rect );
 draw_events( window, evt_file, elapsed_edf, window_rect(1), window_rect(2) );
 
 flip( window );
+
+if ( params.make_movie )
+  Screen( 'AddFrameToMovie', window.WindowHandle );
+end
 
 end
